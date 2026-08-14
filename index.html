@@ -1,0 +1,2213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B6E80">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Caderno da Piscina</title>
+<style>
+:root{
+  --bg:#F3F7F9; --card:#FFFFFF; --ink:#0F1F24; --ink2:#48606A; --line:#D6E0E5;
+  --agua:#0B6E80; --agua-d:#075361; --azul:#1565A0; --amber:#B25B00;
+  --roxo:#5B4B8A; --red:#B3261E; --shadow:0 1px 3px rgba(0,0,0,.10),0 4px 14px rgba(0,0,0,.05);
+  --r:14px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font:400 17px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  padding-bottom:84px; overscroll-behavior-y:contain;
+}
+h1,h2,h3{margin:0;font-weight:650;letter-spacing:-.01em}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,select,textarea{font:inherit;color:inherit;width:100%}
+.hide{display:none !important}
+
+header{
+  position:sticky;top:0;z-index:30;background:var(--agua);color:#fff;
+  padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top));
+  display:flex;align-items:center;gap:12px;box-shadow:var(--shadow)
+}
+header h1{font-size:19px;flex:1}
+header .sub{font-size:13px;opacity:.85;font-weight:400;display:block;margin-top:1px}
+.iconbtn{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:20px;background:rgba(255,255,255,.14)}
+
+main{padding:16px 16px 8px}
+.sec{margin-bottom:26px}
+.sec-t{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin-bottom:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:var(--r);padding:22px 18px;text-align:center;color:var(--ink2);font-size:15px}
+
+/* ---------- tela inicial ---------- */
+.home{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px 8px 0}
+.gota{width:132px;height:132px;display:block}
+.st-t{font-size:21px;font-weight:700;margin-top:2px}
+.st-s{font-size:15px;color:var(--ink2);margin-top:5px;max-width:320px;line-height:1.4}
+.st-t.ok{color:var(--agua)} .st-t.atencao{color:var(--amber)} .st-t.problema{color:var(--red)}
+
+.micwrap{margin:34px 0 0}
+.mic{
+  width:176px;height:176px;border-radius:50%;background:var(--agua);color:#fff;
+  display:grid;place-items:center;box-shadow:0 6px 20px rgba(11,110,128,.34);
+  transition:transform .1s, background .2s
+}
+.mic:active{transform:scale(.96)}
+.mic.rec{background:var(--red);box-shadow:0 6px 20px rgba(179,38,30,.34);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(179,38,30,.42),0 6px 20px rgba(179,38,30,.34)}
+                 60%{box-shadow:0 0 0 22px rgba(179,38,30,0),0 6px 20px rgba(179,38,30,.34)}}
+.mic svg{width:66px;height:66px}
+.miclb{margin-top:18px;font-size:17px;font-weight:650;color:var(--ink2)}
+.mictime{font-variant-numeric:tabular-nums;color:var(--red)}
+.fala-viva{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px 16px;font-size:16.5px;line-height:1.45;text-align:left;min-height:58px;width:100%;max-width:520px;box-shadow:var(--shadow)}
+.fala-viva .par{color:var(--ink2)}
+.fala-orig{background:var(--card);border-left:4px solid var(--agua);border-radius:0 12px 12px 0;
+  padding:13px 15px;font-size:16px;font-style:italic;color:var(--ink2);margin-bottom:16px}
+.aviso{background:#FDEEDD;color:var(--amber);border-radius:10px;padding:11px 13px;font-size:14.5px;font-weight:600;margin-bottom:14px}
+.aviso.bad{background:#FBE6E4;color:var(--red)}
+.falta{color:var(--amber);font-weight:650}
+.escolha{background:#FDF3E6;border-top:1px solid #F0DCC0;padding:12px 14px}
+.escolha .sec-t{color:var(--amber);margin-bottom:8px}
+.escolha .chip{border-color:#E8CBA4}
+.card.pisca{animation:pisca 1s ease-out 2}
+@keyframes pisca{0%,100%{box-shadow:var(--shadow)}50%{box-shadow:0 0 0 4px rgba(178,91,0,.35)}}
+.ensinar{width:100%;margin-top:10px;border:1.5px dashed var(--agua);color:var(--agua);
+  background:#EEF6F8;border-radius:10px;padding:11px;font-size:14.5px;font-weight:650;text-align:center}
+.pend{margin-top:22px;font-size:15px;color:var(--ink2);padding:9px 16px;border-radius:999px;background:#E5EAED;font-weight:600}
+.photobtn{margin-top:26px;display:inline-flex;align-items:center;gap:8px;font-size:15.5px;font-weight:650;color:var(--ink2);padding:11px 20px;border:1.5px solid var(--line);border-radius:999px;background:var(--card)}
+
+/* ---------- listas ---------- */
+.row{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);align-items:flex-start;width:100%;text-align:left}
+.row:last-child{border-bottom:0}
+.row .dot{width:10px;height:10px;border-radius:50%;margin-top:7px;flex:0 0 10px}
+.row .bd{flex:1;min-width:0}
+.row .t1{font-weight:600;font-size:16px}
+.row .t2{font-size:14px;color:var(--ink2);margin-top:2px}
+.row .rt{font-size:13px;color:var(--ink2);white-space:nowrap;padding-top:2px}
+.d-servico{background:var(--azul)} .d-medicao{background:var(--agua)}
+.d-observacao{background:var(--roxo)}
+.thumb{width:44px;height:44px;border-radius:9px;object-fit:cover;flex:0 0 44px;background:#E5EAED}
+.flag{color:var(--amber);font-weight:700}
+
+.daygrp{margin-bottom:14px}
+.dayhd{font-size:13px;font-weight:700;color:var(--ink2);margin:0 4px 6px;text-transform:capitalize}
+
+.acard{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;width:100%;text-align:left}
+.acard:last-child{border-bottom:0}
+.acard .bd{flex:1;min-width:0}
+.acard .nm{font-weight:650;font-size:17px}
+.acard .mt{font-size:14px;color:var(--ink2);margin-top:2px}
+.pill{font-size:12.5px;font-weight:650;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:#DCEEF1;color:var(--agua-d)}
+.pill.warn{background:#FDEEDD;color:var(--amber)}
+.pill.bad{background:#FBE6E4;color:var(--red)}
+.pill.neutral{background:#E5EAED;color:var(--ink2)}
+
+/* ---------- agua ---------- */
+.med{display:flex;align-items:center;gap:14px;padding:15px 16px;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.med:last-child{border-bottom:0}
+.med .bd{flex:1;min-width:0}
+.med .vl{font-size:25px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.med .vl.ok{color:var(--agua)} .med .vl.warn{color:var(--amber)} .med .vl.bad{color:var(--red)}
+.barra{position:relative;height:8px;border-radius:5px;background:#E5EAED;margin-top:9px;overflow:hidden}
+.barra .faixa{position:absolute;top:0;bottom:0;background:#BFE0E6;border-radius:5px}
+.barra .marca{position:absolute;top:-3px;width:4px;height:14px;border-radius:2px;background:var(--ink)}
+
+/* ---------- gravacoes ---------- */
+.grav{padding:14px 16px;border-bottom:1px solid var(--line)}
+.grav:last-child{border-bottom:0}
+.grav-top{display:flex;align-items:center;gap:12px}
+.play{width:46px;height:46px;border-radius:50%;background:var(--agua);color:#fff;display:grid;place-items:center;flex:0 0 46px;font-size:17px}
+.play.on{background:var(--ink)}
+.grav .bd{flex:1;min-width:0}
+.grav .t1{font-weight:650;font-size:16px}
+.grav .t2{font-size:14px;color:var(--ink2);margin-top:2px}
+.grav-acts{display:flex;gap:8px;margin-top:12px}
+.mini{flex:1;border:1.5px solid var(--line);background:var(--card);border-radius:10px;padding:10px;font-size:14.5px;font-weight:650;color:var(--ink2);text-align:center}
+.mini.d{color:var(--red);border-color:#E3B7B4}
+
+nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--card);
+  border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);
+  padding-bottom:env(safe-area-inset-bottom)
+}
+nav button{padding:9px 0 10px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink2);font-size:11.5px;font-weight:600;position:relative}
+nav button .ic{font-size:20px;line-height:1}
+nav button.on{color:var(--agua)}
+.badge{position:absolute;top:4px;right:calc(50% - 24px);background:var(--red);color:#fff;font-size:10.5px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;padding:0 5px}
+
+.scrim{position:fixed;inset:0;background:rgba(15,31,36,.45);z-index:40;opacity:0;pointer-events:none;transition:opacity .18s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--bg);
+  border-radius:20px 20px 0 0;max-height:92vh;display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .22s cubic-bezier(.3,.8,.4,1)
+}
+.sheet.on{transform:translateY(0)}
+.sheet-h{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--card);border-radius:20px 20px 0 0}
+.sheet-h h2{flex:1;font-size:18px}
+.sheet-b{overflow-y:auto;padding:16px;flex:1;-webkit-overflow-scrolling:touch}
+.sheet-f{padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--card);display:flex;gap:10px}
+
+.f{margin-bottom:18px}
+.f > label{display:block;font-size:14px;font-weight:650;color:var(--ink2);margin-bottom:7px}
+.f .hint{font-size:13px;color:var(--ink2);font-weight:400;margin-top:6px}
+input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{
+  background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:14px;min-height:52px
+}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--agua)}
+textarea{min-height:104px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:11px 16px;font-size:15px;font-weight:600;color:var(--ink2)}
+.chip.on{background:var(--agua);border-color:var(--agua);color:#fff}
+.abas{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;-webkit-overflow-scrolling:touch}
+.abas .chip{flex:0 0 auto;padding:9px 14px;font-size:14.5px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{border-radius:12px;padding:15px;font-weight:700;font-size:17px;text-align:center;flex:1}
+.btn.pri{background:var(--agua);color:#fff}
+.btn.sec{background:var(--card);border:1.5px solid var(--line);color:var(--ink2);flex:0 0 40%}
+.btn.dng{background:var(--card);border:1.5px solid #E3B7B4;color:var(--red)}
+.btn:active{opacity:.8}
+.linkbtn{color:var(--agua);font-weight:650;font-size:15px;padding:6px 0}
+.err{background:#FBE6E4;color:var(--red);border-radius:10px;padding:11px 13px;font-size:14.5px;font-weight:600;margin-bottom:14px}
+.photoprev{width:100%;border-radius:12px;margin-top:10px;display:block}
+
+#toast{position:fixed;left:16px;right:16px;bottom:96px;z-index:70;background:var(--ink);color:#fff;border-radius:12px;padding:14px 16px;font-size:15.5px;font-weight:600;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none}
+#toast.on{opacity:1;transform:translateY(0)}
+
+.menu-item{display:flex;align-items:center;gap:14px;padding:16px;border-bottom:1px solid var(--line);width:100%;text-align:left;font-size:16.5px;font-weight:600}
+.menu-item:last-child{border-bottom:0}
+.menu-item .ic{font-size:20px;width:26px;text-align:center}
+.menu-item .ch{color:var(--ink2);font-weight:400;font-size:15px}
+.kv{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--line);font-size:15.5px}
+.kv:last-child{border-bottom:0}
+.kv span:first-child{color:var(--ink2)}
+.kv span:last-child{font-weight:650;text-align:right}
+</style>
+</head>
+<body>
+
+<header>
+  <button class="iconbtn hide" id="backBtn" aria-label="Voltar">&#8592;</button>
+  <h1 id="hdTitle">Caderno da Piscina<span class="sub" id="hdSub"></span></h1>
+</header>
+
+<main id="view"></main>
+
+<nav>
+  <button data-tab="home" class="on"><span class="ic">&#128167;</span>Início</button>
+  <button data-tab="diario"><span class="ic">&#128220;</span>Diário</button>
+  <button data-tab="agua"><span class="ic">&#129514;</span>Água</button>
+  <button data-tab="mais"><span class="ic">&#9776;</span>Mais</button>
+</nav>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-h"><h2 id="shTitle"></h2><button class="iconbtn" id="shClose" style="background:#E5EAED;color:var(--ink2)">&#10005;</button></div>
+  <div class="sheet-b" id="shBody"></div>
+  <div class="sheet-f" id="shFoot"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+/* ============ util ============ */
+const $ = s => document.querySelector(s);
+const el = (t,c,h) => { const n=document.createElement(t); if(c)n.className=c; if(h!==undefined)n.innerHTML=h; return n; };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+const semAcento = s => String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+/* identificador derivado do nome: os dois aparelhos geram o mesmo, então a
+   sincronia (etapa 3) não vai criar item repetido. */
+const slug = s => semAcento(s).replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+
+const MS_DAY = 86400000;
+function todayISO(){ const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+function nowHM(){ const d=new Date(); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+function dayStart(iso){ const [y,m,d]=iso.slice(0,10).split("-").map(Number); return new Date(y,m-1,d).getTime(); }
+function daysAgo(iso){ return Math.floor((dayStart(todayISO()) - dayStart(iso)) / MS_DAY); }
+function fmtDay(iso){
+  const n = daysAgo(iso);
+  if(n===0) return "Hoje";
+  if(n===1) return "Ontem";
+  const [y,m,d]=iso.slice(0,10).split("-");
+  const dt=new Date(+y,+m-1,+d);
+  const wd=["domingo","segunda","terça","quarta","quinta","sexta","sábado"][dt.getDay()];
+  return (n<7? wd+", " : "") + d+"/"+m + (String(new Date().getFullYear())!==y ? "/"+y : "");
+}
+function fmtAgo(iso){ const n=daysAgo(iso); return n===0?"hoje":n===1?"ontem":"há "+n+" dias"; }
+function fmtDur(s){ return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(t._x); t._x=setTimeout(()=>t.classList.remove("on"),3600); }
+function num(v){ if(v===""||v==null) return null; const n=parseFloat(String(v).replace(",",".")); return isFinite(n)?n:null; }
+function fmtNum(n){ return String(n).replace(".",","); }
+
+/* ============ banco ============ */
+const DB_NAME="caderno-piscina", DB_VER=1;
+const STORES=["lugares","coisas","produtos","parametros","verbos","atencao","registros","gravacoes","config"];
+let _db=null;
+function openDB(){
+  return new Promise((ok,err)=>{
+    const r=indexedDB.open(DB_NAME,DB_VER);
+    r.onupgradeneeded=e=>{ const d=e.target.result; STORES.forEach(s=>{ if(!d.objectStoreNames.contains(s)) d.createObjectStore(s,{keyPath:"id"}); }); };
+    r.onsuccess=e=>{ _db=e.target.result; ok(_db); };
+    r.onerror=e=>err(e.target.error);
+  });
+}
+function tx(store,mode){ return _db.transaction(store,mode).objectStore(store); }
+function put(store,obj){ return new Promise((ok,err)=>{ const r=tx(store,"readwrite").put(obj); r.onsuccess=()=>ok(obj); r.onerror=e=>err(e.target.error); }); }
+function del(store,id){ return new Promise((ok,err)=>{ const r=tx(store,"readwrite").delete(id); r.onsuccess=()=>ok(); r.onerror=e=>err(e.target.error); }); }
+function all(store){ return new Promise((ok,err)=>{ const r=tx(store,"readonly").getAll(); r.onsuccess=()=>ok(r.result||[]); r.onerror=e=>err(e.target.error); }); }
+function clearStore(store){ return new Promise((ok,err)=>{ const r=tx(store,"readwrite").clear(); r.onsuccess=()=>ok(); r.onerror=e=>err(e.target.error); }); }
+
+/* ============ estado ============ */
+const S = { lugares:[], coisas:[], produtos:[], parametros:[], verbos:[], atencao:[], registros:[], gravacoes:[], config:{} };
+async function load(){
+  const [lu,co,pr,pa,ve,at,re,gr,cf] = await Promise.all(STORES.map(all));
+  S.lugares=lu; S.coisas=co; S.produtos=pr; S.parametros=pa; S.verbos=ve; S.atencao=at;
+  S.registros=re; S.gravacoes=gr;
+  S.config = (cf.find(x=>x.id==="app")||{id:"app"});
+  /* o banco devolve por ordem de identificador (alfabética). Pra Piscina e pH
+     aparecerem primeiro, cada item guarda a ordem em que foi cadastrado. */
+  ordenar(S.lugares); ordenar(S.parametros); ordenar(S.produtos);
+}
+function ordenar(lista){
+  lista.sort((a,b)=>{
+    const x = a.ord==null?999:a.ord, y = b.ord==null?999:b.ord;
+    return x!==y ? x-y : semAcento(a.nome).localeCompare(semAcento(b.nome));
+  });
+}
+const lugarById = id => S.lugares.find(x=>x.id===id);
+const coisaById = id => S.coisas.find(x=>x.id===id);
+const produtoById = id => S.produtos.find(x=>x.id===id);
+const paramById = id => S.parametros.find(x=>x.id===id);
+/* data + hora + quando foi criado. O terceiro pedaço importa: duas leituras no
+   MESMO minuto (“pH 7,2 e cloro 1,5”) empatariam, e aí a “última” virava sorteio. */
+const ordem = r => (r.data||"") + " " + (r.hora||"") + " " + (r.criadoEm||"");
+const sortedRegs = () => S.registros.slice().sort((a,b)=> ordem(b).localeCompare(ordem(a)) );
+const pendentes = () => S.gravacoes.filter(g=>g.status!=="processada").sort((a,b)=>(b.data+b.hora).localeCompare(a.data+a.hora));
+
+/* ============ faixa das medições ============ */
+/* Só compara com a faixa. Nunca receita dose de químico — isso fica com o Rob. */
+function foraDaFaixa(p, valor){
+  if(valor==null || !p) return null;
+  if(p.min!=null && valor < p.min) return "baixo";
+  if(p.max!=null && valor > p.max) return "alto";
+  return null;
+}
+function ultimaLeitura(paramId){
+  const L = S.registros.filter(r=>r.tipo==="medicao" && r.parametroId===paramId)
+                       .sort((a,b)=>ordem(b).localeCompare(ordem(a)));
+  return L.length ? L[0] : null;
+}
+function ultimaMedicaoData(){
+  const L = S.registros.filter(r=>r.tipo==="medicao").sort((a,b)=>ordem(b).localeCompare(ordem(a)));
+  return L.length ? L[0].data : null;
+}
+/* Medição fora da faixa já aparece pela própria faixa, e some sozinha na leitura
+   seguinte. Se entrasse aqui também, ficaria um alerta velho pra sempre. */
+const alertasAbertos = () => S.registros.filter(r=>r.tipo!=="medicao" && r.atencao && !r.resolvido && daysAgo(r.data)<=30)
+                                        .sort((a,b)=>ordem(b).localeCompare(ordem(a)));
+
+/* ============ status geral (a gota) ============ */
+function statusGeral(){
+  if(!S.registros.length && !S.gravacoes.length)
+    return {nivel:"ok", t:"Comece falando", s:"Toque no microfone e diga o que você fez ou o que mediu. Depois eu organizo."};
+
+  const fora = [];
+  S.parametros.forEach(p=>{
+    const u = ultimaLeitura(p.id);
+    if(!u || daysAgo(u.data) > 10) return;
+    const f = foraDaFaixa(p, u.valor);
+    if(f) fora.push({p, u, f});
+  });
+
+  if(fora.length){
+    const t = fora.length===1 ? fora[0].p.nome+" "+fora[0].f : fora.length+" medidas fora da faixa";
+    const s = fora.map(x=>x.p.nome+" "+fmtNum(x.u.valor)+(x.p.unidade?" "+x.p.unidade:"")+
+                          " (ideal "+fmtNum(x.p.min)+"–"+fmtNum(x.p.max)+")").join(" · ");
+    return {nivel:"problema", t, s};
+  }
+
+  const ab = alertasAbertos();
+  if(ab.length){
+    const t = ab.length===1 ? "1 coisa pra olhar" : ab.length+" coisas pra olhar";
+    const s = ab.slice(0,2).map(r=>(r.obs||"").slice(0,70)).join(" · ");
+    return {nivel:"atencao", t, s};
+  }
+
+  const um = ultimaMedicaoData();
+  const freq = S.config.freqMedicao == null ? 2 : S.config.freqMedicao;
+  if(!um)
+    return {nivel:"atencao", t:"Falta medir", s:"Nenhuma medição registrada ainda. Fale, por exemplo: “pH 7,4 e cloro 2”."};
+  if(freq > 0 && daysAgo(um) > freq)
+    return {nivel:"atencao", t:"Hora de medir", s:"A última medição foi "+fmtAgo(um)+"."};
+
+  return {nivel:"ok", t:"Água em ordem", s:"Tudo dentro da faixa na última medição, "+fmtAgo(um)+"."};
+}
+
+function gotaSVG(nivel){
+  const C = nivel==="problema" ? {c1:"#D2604A",c2:"#B3392A",br:"#F3C9C2"}
+          : nivel==="atencao"  ? {c1:"#E0A93C",c2:"#B87F0E",br:"#F7E4C0"}
+          :                      {c1:"#3FA8BE",c2:"#0B6E80",br:"#CFEAF0"};
+  return `<svg class="gota" viewBox="0 0 100 100" aria-hidden="true">
+    <ellipse cx="50" cy="94" rx="25" ry="4" fill="#000" opacity=".07"/>
+    <path d="M50 8 C50 8 20 44 20 62 a30 30 0 0 0 60 0 C80 44 50 8 50 8 Z" fill="${C.c1}"/>
+    <path d="M50 8 C50 8 20 44 20 62 a30 30 0 0 0 30 30 Z" fill="${C.c2}" opacity=".55"/>
+    <path d="M22 64 q9 -7 18 0 t18 0 t18 0 v2 a28 28 0 0 1 -54 0 Z" fill="#fff" opacity=".22"/>
+    <ellipse cx="38" cy="46" rx="7" ry="10" fill="${C.br}" opacity=".75" transform="rotate(-20 38 46)"/>
+  </svg>`;
+}
+
+/* ============ rótulos ============ */
+const TIPO_LB = {servico:"Serviço", medicao:"Medição", observacao:"Observação"};
+const UNIDADES = ["L","mL","kg","g","un","saco"];
+
+function descRegistro(r){
+  const p=[];
+  if(r.tipo==="servico"){
+    if(r.verbo) p.push(r.verbo.charAt(0).toUpperCase()+r.verbo.slice(1));
+    const c = r.coisaId ? coisaById(r.coisaId) : null; if(c) p.push(c.nome);
+    const pd = r.produtoId ? produtoById(r.produtoId) : null; if(pd) p.push(pd.nome);
+    if(r.quantidade!=null) p.push(fmtNum(r.quantidade)+" "+(r.unidade||""));
+  } else if(r.tipo==="medicao"){
+    const pa = paramById(r.parametroId);
+    if(pa){
+      const f = foraDaFaixa(pa, r.valor);
+      p.push(pa.nome+" "+fmtNum(r.valor)+(pa.unidade?" "+pa.unidade:"")+(f?" ("+f+")":""));
+    }
+  }
+  if(r.obs) p.push(r.obs);
+  return p.join(" · ");
+}
+
+/* ============ sheet ============ */
+function openSheet(title, bodyNode, footNodes){
+  $("#shTitle").textContent=title;
+  const b=$("#shBody"); b.innerHTML=""; b.appendChild(bodyNode); b.scrollTop=0;
+  const f=$("#shFoot"); f.innerHTML=""; (footNodes||[]).forEach(n=>f.appendChild(n));
+  f.classList.toggle("hide", !(footNodes&&footNodes.length));
+  $("#scrim").classList.add("on"); $("#sheet").classList.add("on");
+}
+function closeSheet(){ $("#scrim").classList.remove("on"); $("#sheet").classList.remove("on"); }
+$("#scrim").onclick=closeSheet; $("#shClose").onclick=closeSheet;
+function btn(label,cls,fn){ const b=el("button","btn "+cls,esc(label)); b.onclick=fn; return b; }
+function field(label,node,hint){ const w=el("div","f"); w.appendChild(el("label",null,esc(label))); w.appendChild(node); if(hint)w.appendChild(el("div","hint",esc(hint))); return w; }
+function input(type,val,ph){ const i=el("input"); i.type=type; if(val!=null)i.value=val; if(ph)i.placeholder=ph; return i; }
+function textarea(val,ph){ const t=el("textarea"); if(val)t.value=val; if(ph)t.placeholder=ph; return t; }
+function selectEl(options,val,emptyLabel){
+  const s=el("select");
+  if(emptyLabel!==null) s.appendChild(new Option(emptyLabel||"— selecione —",""));
+  options.forEach(o=>s.appendChild(new Option(o.label,o.value)));
+  if(val!=null) s.value=val;
+  return s;
+}
+function chipGroup(options,val){
+  const w=el("div","chips"); let cur=val;
+  options.forEach(o=>{
+    const c=el("button","chip"+(o===cur?" on":""),esc(o)); c.type="button";
+    c.onclick=()=>{ cur=(cur===o?null:o); w.querySelectorAll(".chip").forEach(x=>x.classList.toggle("on",x.textContent===cur)); };
+    w.appendChild(c);
+  });
+  w.value=()=>cur; return w;
+}
+function errBox(){ return el("div","err hide"); }
+function showErr(b,m){ b.textContent=m; b.classList.remove("hide"); b.scrollIntoView({block:"nearest"}); }
+function confirmDel(title,msg,fn){
+  const w=el("div"); w.appendChild(el("p",null,esc(msg)));
+  openSheet(title,w,[btn("Cancelar","sec",closeSheet),btn("Excluir","dng",fn)]);
+}
+async function saveCfg(patch){ S.config=Object.assign({id:"app"},S.config,patch); await put("config",S.config); }
+
+/* ============ fotos ============ */
+function pickPhoto(){
+  return new Promise(res=>{
+    const f=document.createElement("input");
+    f.type="file"; f.accept="image/*"; f.capture="environment";
+    f.onchange=async()=>{ const file=f.files[0]; res(file? await comprimir(file) : null); };
+    f.click();
+  });
+}
+function comprimir(file){
+  return new Promise(res=>{
+    const img=new Image(), url=URL.createObjectURL(file);
+    img.onload=()=>{
+      const MAX=1600;
+      let w=img.width, h=img.height;
+      if(Math.max(w,h)>MAX){ const k=MAX/Math.max(w,h); w=Math.round(w*k); h=Math.round(h*k); }
+      const c=document.createElement("canvas"); c.width=w; c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      c.toBlob(b=>{ URL.revokeObjectURL(url); res(b||file); },"image/jpeg",.82);
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); res(file); };
+    img.src=url;
+  });
+}
+function imgFrom(blob,cls){ const i=el("img",cls); i.src=URL.createObjectURL(blob); return i; }
+
+/* ============ fala ao vivo ============ */
+/* No Android o reconhecimento de voz precisa do microfone com exclusividade.
+   Por isso: se o navegador entende voz, ele fica com o microfone sozinho.
+   Só quando não entende é que gravamos o áudio pra não perder o que foi dito. */
+let sess = null;
+function micSuportado(){ return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder); }
+function falaSuportada(){ return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
+const ehMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+
+function toggleFala(){
+  if(sess){ encerrarFala(); return; }
+  if(falaSuportada()) iniciarEscuta(); else iniciarGravacao();
+}
+
+function iniciarEscuta(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const sr = new SR();
+  sr.lang = "pt-BR";
+  sr.continuous = !ehMobile();   /* no Android, contínuo trava: reiniciamos a cada pausa */
+  sr.interimResults = true;
+  sr.maxAlternatives = 1;
+
+  sess = {modo:"escuta", sr, inicio:Date.now(), texto:"", parcial:"", erro:null, encerrando:false, timer:null};
+
+  sr.onresult = ev => {
+    if(!sess) return;
+    let fin = "", par = "";
+    for(let i = ev.resultIndex; i < ev.results.length; i++){
+      const r = ev.results[i];
+      if(r.isFinal) fin += r[0].transcript + " "; else par += r[0].transcript;
+    }
+    if(fin){ sess.texto += fin; sess.parcial = ""; } else { sess.parcial = par; }
+    sess.erro = null;
+    pintarFala();
+  };
+  sr.onerror = ev => {
+    if(!sess) return;
+    sess.erro = ev.error;
+    if(ev.error === "not-allowed" || ev.error === "service-not-allowed" || ev.error === "audio-capture"){
+      sess.encerrando = true;
+      try { sr.stop(); } catch(e){}
+    }
+    pintarFala();
+  };
+  sr.onend = () => {
+    if(!sess) return;
+    if(!sess.encerrando){                       /* pausa natural: volta a ouvir */
+      try { sr.start(); return; } catch(e){}
+    }
+    finalizarEscuta();
+  };
+
+  try { sr.start(); }
+  catch(e){ sess = null; toast("Não consegui iniciar o microfone."); return; }
+
+  render();
+  sess.timer = setInterval(() => {
+    const t = document.getElementById("micTime");
+    if(t && sess) t.textContent = fmtDur(Math.round((Date.now() - sess.inicio)/1000));
+  }, 250);
+}
+
+function finalizarEscuta(){
+  const s = sess; if(!s) return;
+  sess = null;
+  clearInterval(s.timer);
+  const texto = ((s.texto || "") + " " + (s.parcial || "")).replace(/\s+/g," ").trim();
+  render();
+  if(!texto){
+    toast(s.erro === "not-allowed" || s.erro === "service-not-allowed"
+            ? "O navegador não liberou o microfone. Autorize nas permissões do site."
+        : s.erro === "audio-capture" ? "Não consegui acessar o microfone. Feche outros apps que estejam usando ele."
+        : s.erro === "network" ? "Sem internet pra entender a fala agora."
+        : "Não ouvi nada. Toque de novo e fale mais perto do aparelho.");
+    return;
+  }
+  telaConfirmar(texto, interpretar(texto), null);
+}
+
+/* modo sem reconhecimento: guarda o áudio pra não perder o que foi dito */
+async function iniciarGravacao(){
+  if(!micSuportado()){ toast("Este navegador não permite gravar áudio aqui."); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch(e){ console.error(e); toast("Não consegui usar o microfone. Verifique a permissão do navegador."); return; }
+
+  const mime = ["audio/webm;codecs=opus","audio/webm","audio/mp4"]
+    .find(m => window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) || "";
+  const mr = new MediaRecorder(stream, mime ? {mimeType:mime, audioBitsPerSecond:24000} : {});
+
+  sess = {modo:"gravacao", mr, stream, chunks:[], inicio:Date.now(), mime, texto:"", parcial:"", erro:null, encerrando:false, timer:null};
+  mr.ondataavailable = e => { if(e.data && e.data.size) sess.chunks.push(e.data); };
+  mr.onstop = () => finalizarGravacao();
+  mr.start();
+
+  render();
+  sess.timer = setInterval(() => {
+    const t = document.getElementById("micTime");
+    if(t && sess) t.textContent = fmtDur(Math.round((Date.now() - sess.inicio)/1000));
+  }, 250);
+}
+
+async function finalizarGravacao(){
+  const s = sess; if(!s) return;
+  sess = null;
+  clearInterval(s.timer);
+  try { s.stream.getTracks().forEach(t => t.stop()); } catch(e){}
+  const dur = Math.max(1, Math.round((Date.now() - s.inicio)/1000));
+  const blob = new Blob(s.chunks, {type: s.mime || "audio/webm"});
+  if(blob.size < 400){ render(); toast("Gravação muito curta, descartada."); return; }
+  const g = {id:uid(), blob, dur, tipoMime:blob.type, data:todayISO(), hora:nowHM(),
+             status:"pendente", texto:null, lugarId:null, criadoEm:new Date().toISOString()};
+  await put("gravacoes", g); S.gravacoes.push(g);
+  render();
+  toast("Este navegador não entende voz. O áudio ficou guardado em Gravações.");
+}
+
+function encerrarFala(){
+  if(!sess || sess.encerrando) return;
+  sess.encerrando = true;
+  clearInterval(sess.timer); sess.timer = null;
+  if(sess.modo === "escuta"){ try { sess.sr.stop(); } catch(e){ finalizarEscuta(); } }
+  else { try { sess.mr.stop(); } catch(e){ finalizarGravacao(); } }
+}
+
+function pintarFala(){
+  const box = document.getElementById("falaViva");
+  if(!box || !sess) return;
+  const t = (sess.texto || "").trim(), p = (sess.parcial || "").trim();
+  if(sess.erro && !t && !p){
+    const msg = sess.erro === "network" ? "Sem internet pra entender agora…"
+              : sess.erro === "no-speech" ? "Não ouvi nada ainda. Fale mais perto…"
+              : sess.erro === "audio-capture" ? "O microfone está ocupado por outro app."
+              : sess.erro === "not-allowed" || sess.erro === "service-not-allowed" ? "Permissão de microfone negada."
+              : "Tentando ouvir…";
+    box.innerHTML = '<span class="par">' + esc(msg) + '</span>';
+    return;
+  }
+  box.innerHTML = (t || p)
+    ? esc(t) + (p ? ' <span class="par">' + esc(p) + '</span>' : "")
+    : '<span class="par">Pode falar…</span>';
+}
+
+let audioAtual = null, audioId = null;
+function tocar(g, botao){
+  if(audioAtual){
+    audioAtual.pause(); audioAtual = null;
+    document.querySelectorAll(".play.on").forEach(b => { b.classList.remove("on"); b.innerHTML = "&#9654;"; });
+    if(audioId === g.id){ audioId = null; return; }
+  }
+  const a = new Audio(URL.createObjectURL(g.blob));
+  audioAtual = a; audioId = g.id;
+  botao.classList.add("on"); botao.innerHTML = "&#9724;";
+  a.onended = () => { botao.classList.remove("on"); botao.innerHTML = "&#9654;"; audioAtual = null; audioId = null; };
+  a.play().catch(() => { toast("Não consegui tocar o áudio."); botao.classList.remove("on"); botao.innerHTML = "&#9654;"; });
+}
+
+/* ============ vocabulário do Rob ============ */
+/* Os identificadores vêm do nome (slug), não são sorteados. Assim, quando a
+   sincronia entrar (etapa 3), os dois aparelhos criam o MESMO item em vez de dois. */
+const VOCAB_VERSAO = 1;
+
+const V_LUGARES = [
+  {nome:"Piscina",          icone:"&#128704;", volume:25000, apelidos:["a piscina","na piscina","pissina","piscininha","na agua","da piscina"]},
+  {nome:"Sala de máquinas", icone:"&#9881;",   apelidos:["casa de maquinas","casa de maquina","sala de maquina","casa das maquinas","sala das maquinas","maquinas","casa de bomba","casa da bomba","sala de maquinas"]},
+  {nome:"Entrada",          icone:"&#127968;", apelidos:["na entrada","a entrada","da entrada","portaria"]},
+  {nome:"Estrutura",        icone:"&#128296;", apelidos:["na estrutura","a estrutura","da estrutura","obra","predio","construcao"]}
+];
+
+const V_COISAS = [
+  {nome:"Água",            lugar:"Piscina", apelidos:["agua","a agua","aguinha"]},
+  {nome:"Borda",           lugar:"Piscina", apelidos:["bordas","a borda","borda da piscina"]},
+  {nome:"Fundo",           lugar:"Piscina", apelidos:["o fundo","fundo da piscina"]},
+  {nome:"Azulejo",         lugar:"Piscina", apelidos:["azulejos","pastilha","pastilhas","revestimento"]},
+  {nome:"Escada",          lugar:"Piscina", apelidos:["escadinha","escada da piscina","degraus"]},
+  {nome:"Ralo",            lugar:"Piscina", apelidos:["ralos","ralo de fundo","dreno"]},
+  {nome:"Skimmer",         lugar:"Piscina", apelidos:["skimer","esquimer","escumadeira","boca de lobo"]},
+  {nome:"Aspirador",       lugar:"Piscina", apelidos:["aspirador de piscina","mangote","aspirador automatico"]},
+  {nome:"Escova",          lugar:"Piscina", apelidos:["escovao","escova de parede"]},
+  {nome:"Peneira",         lugar:"Piscina", apelidos:["peneirao","coador","rede"]},
+  {nome:"Pedras",          lugar:"Piscina", apelidos:["pedra","as pedras","pedrinhas","seixo","seixos"]},
+  {nome:"Prainha",         lugar:"Piscina", apelidos:["praia","parte rasa","raso"]},
+  {nome:"Luz da piscina",  lugar:"Piscina", apelidos:["luz","refletor","iluminacao da piscina","led da piscina"]},
+
+  {nome:"Bomba",           lugar:"Sala de máquinas", apelidos:["a bomba","moto bomba","motobomba","motor da bomba","bomba dagua"]},
+  {nome:"Filtro",          lugar:"Sala de máquinas", apelidos:["o filtro","filtro de areia","filtragem"]},
+  {nome:"Pré-filtro",      lugar:"Sala de máquinas", apelidos:["pre filtro","prefiltro","cesto do pre filtro","cesto"]},
+  {nome:"Areia do filtro", lugar:"Sala de máquinas", apelidos:["areia","a areia","carga do filtro"]},
+  {nome:"Motor",           lugar:"Sala de máquinas", apelidos:["o motor","motorzinho"]},
+  {nome:"UV",              lugar:"Sala de máquinas", apelidos:["ultravioleta","luz ultravioleta","lampada uv","u v"]},
+  {nome:"Ozônio",          lugar:"Sala de máquinas", apelidos:["ozonio","gerador de ozonio","ozonizador"]},
+  {nome:"Registro",        lugar:"Sala de máquinas", apelidos:["registros","valvula","valvulas","chave do filtro"]},
+  {nome:"Quadro elétrico", lugar:"Sala de máquinas", apelidos:["quadro","quadro eletrico","disjuntor","painel"]},
+  {nome:"Mangueira",       lugar:"Sala de máquinas", apelidos:["mangueiras","cano","canos","tubulacao"]},
+  {nome:"Timer",           lugar:"Sala de máquinas", apelidos:["temporizador","programador","relogio da bomba"]},
+
+  {nome:"Parede",          lugar:"Estrutura", apelidos:["paredes","a parede","muro","muros"]},
+  {nome:"Janela",          lugar:"Estrutura", apelidos:["janelas","a janela","vidro","vidros"]},
+  {nome:"Piso",            lugar:"Estrutura", apelidos:["o piso","chao","piso do deck","deck"]},
+  {nome:"Quarto",          lugar:"Estrutura", apelidos:["quartos","o quarto","dormitorio"]},
+  {nome:"Banheiro",        lugar:"Estrutura", apelidos:["banheiros","o banheiro","vestiario","lavabo"]},
+  {nome:"Porta",           lugar:"Estrutura", apelidos:["portas","a porta"]},
+  {nome:"Telhado",         lugar:"Estrutura", apelidos:["teto","o telhado","cobertura","forro"]},
+  {nome:"Cerca",           lugar:"Estrutura", apelidos:["cercas","alambrado","grade","gradil"]},
+
+  {nome:"Plantas",         lugar:"Entrada", apelidos:["planta","as plantas","mudas","muda","jardim","canteiro"]},
+  {nome:"Baunilhas",       lugar:"Entrada", apelidos:["baunilha","as baunilhas","banilha","banilhas","baunilhas do jardim"]},
+  {nome:"Sofá",            lugar:"Entrada", apelidos:["sofa","o sofa","sofas","poltrona"]},
+  {nome:"Almofadas",       lugar:"Entrada", apelidos:["almofada","as almofadas"]},
+  {nome:"Cadeiras",        lugar:"Entrada", apelidos:["cadeira","as cadeiras","espreguicadeira","espreguicadeiras"]},
+  {nome:"Recepção",        lugar:"Entrada", apelidos:["recepcao","a recepcao","balcao","atendimento"]},
+  {nome:"Geladeira",       lugar:"Entrada", apelidos:["a geladeira","frigobar"]},
+  {nome:"Armário",         lugar:"Entrada", apelidos:["armario","o armario","armarios","estante"]},
+  {nome:"Mesa",            lugar:"Entrada", apelidos:["mesas","a mesa","mesinha"]},
+  {nome:"Vaso",            lugar:"Entrada", apelidos:["vasos","o vaso","vaso de planta","vasos de planta"]},
+  {nome:"Grama",           lugar:"Entrada", apelidos:["a grama","gramado","mato"]},
+  {nome:"Portão",          lugar:"Entrada", apelidos:["portao","o portao","portoes"]}
+];
+
+/* lugar: null = o app decide pela coisa citada, ou pergunta. */
+const V_VERBOS = [
+  {p:"aspirei",         lugar:"Piscina", ouvidos:["aspirar","aspirou","aspira","aspire","as pirei","aspirei a","spirei","aspirei o"]},
+  {p:"escovei",         lugar:"Piscina", ouvidos:["escovar","escovou","escova","escove","escovei a","escovei o"]},
+  {p:"peneirei",        lugar:"Piscina", ouvidos:["peneirar","peneirou","peneire","peneirei a","penerei"]},
+  {p:"testei",          lugar:"Piscina", ouvidos:["testar","testou","teste","testei o","medi","medir","mediu"]},
+  {p:"tratei",          lugar:"Piscina", ouvidos:["tratar","tratou","trata","fiz o tratamento"]},
+  {p:"apliquei",        lugar:"Piscina", ouvidos:["aplicar","aplicou","aplique","apliquei o"]},
+  {p:"adicionei",       lugar:"Piscina", ouvidos:["adicionar","adicionou","adicione","adicionei o","adicionei a"]},
+  {p:"coloquei",        lugar:"Piscina", ouvidos:["colocar","colocou","coloque"]},
+  {p:"joguei",          lugar:"Piscina", ouvidos:["jogar","jogou","joga"]},
+  {p:"cobri",           lugar:"Piscina", ouvidos:["cobrir","cobriu","tampei","cobri a piscina"]},
+
+  {p:"retrolavei",      lugar:"Sala de máquinas", ouvidos:["retrolavar","retro lavei","retrolavagem","retro lavagem","fiz a retrolavagem","fiz retrolavagem","backwash"]},
+  {p:"limpei o filtro", lugar:"Sala de máquinas", ouvidos:["limpeza do filtro","limpei filtro","limpeza de filtro","limpei o pre filtro","limpei o cesto"]},
+  {p:"liguei",          lugar:"Sala de máquinas", ouvidos:["ligar","ligou","liga"]},
+  {p:"desliguei",       lugar:"Sala de máquinas", ouvidos:["desligar","desligou","desliga"]},
+
+  {p:"limpei",          lugar:null, ouvidos:["limpar","limpou","limpa","limpeza","fiz a limpeza"]},
+  {p:"instalei",        lugar:null, ouvidos:["instalar","instalou","instale","instalacao","instalei o","instalei a"]},
+  {p:"troquei",         lugar:null, ouvidos:["trocar","trocou","troque","substitui","substituir"]},
+  {p:"consertei",       lugar:null, ouvidos:["consertar","consertou","conserto","arrumei o conserto","reparei"]},
+  {p:"verifiquei",      lugar:null, ouvidos:["verificar","verificou","conferi","conferir","chequei"]},
+
+  {p:"pintei",          lugar:"Estrutura", ouvidos:["pintar","pintou","pinta","pinte","dei uma pintada"]},
+  {p:"reforcei",        lugar:"Estrutura", ouvidos:["reforcar","reforcou","reforco","dei uma reforcada"]},
+  {p:"renovei",         lugar:"Estrutura", ouvidos:["renovar","renovou","renovacao"]},
+  {p:"construí",        lugar:"Estrutura", ouvidos:["construi","construir","construiu","construcao","levantei"]},
+  {p:"montei",          lugar:"Estrutura", ouvidos:["montar","montou","monte","montagem"]},
+
+  {p:"plantei",         lugar:"Entrada", ouvidos:["plantar","plantou","plante","plantio"]},
+  {p:"reguei",          lugar:"Entrada", ouvidos:["regar","regou","rega","regue","molhei","molhar"]},
+  {p:"movi",            lugar:"Entrada", ouvidos:["mover","moveu","mudei de lugar","mudei","mexi"]},
+  {p:"lavei",           lugar:"Entrada", ouvidos:["lavar","lavou","lava","dei uma lavada"]},
+  {p:"arrumei",         lugar:"Entrada", ouvidos:["arrumar","arrumou","arruma","organizei","organizar"]},
+  {p:"varri",           lugar:"Entrada", ouvidos:["varrer","varreu","varre","dei uma varrida"]},
+  {p:"podei",           lugar:"Entrada", ouvidos:["podar","podou","poda","aparei","aparar"]}
+];
+
+const V_PRODUTOS = [
+  {nome:"Cloro líquido",   unidade:"L",  apelidos:["cloro liquido","hipoclorito","cloro em liquido","cloro liquido de sodio","agua sanitaria"]},
+  {nome:"Cloro granulado", unidade:"kg", apelidos:["cloro granulado","granulado","cloro em po","cloro po","dicloro","cloro granular"]},
+  {nome:"Redutor de pH",   unidade:"kg", apelidos:["redutor de ph","redutor","redutor ph","acido","baixa ph","abaixa ph","acido muriatico"]},
+  {nome:"Floculante",      unidade:"L",  apelidos:["floculante","floculador","clarificante","decantador","floculante liquido"]}
+];
+
+const V_PARAMETROS = [
+  {nome:"pH",           unidade:"",    min:7.2, max:7.6, apelidos:["ph","p h","peaga","pe aga","pe hache"]},
+  {nome:"Cloro livre",  unidade:"ppm", min:1,   max:3,   apelidos:["cloro","cloro livre","cloro residual","clorolivre"]},
+  {nome:"Alcalinidade", unidade:"ppm", min:80,  max:120, apelidos:["alcalinidade","alcalinidade total","alcalino","alcanilidade","alcalinidde"]}
+];
+
+/* Palavras que ligam o aviso amarelo. Algumas só valem num lugar:
+   "verde" na piscina é problema, mas nas plantas da entrada é notícia boa. */
+const V_ATENCAO = [
+  {palavra:"ruído",     apelidos:["ruido","ruidos","barulho","barulhinho","barulhando"]},
+  {palavra:"vazando",   apelidos:["vazamento","vazando","vaza","gotejando","pingando"]},
+  {palavra:"quebrado",  apelidos:["quebrada","quebrou","quebrados","quebradas"]},
+  {palavra:"trincado",  apelidos:["trincada","trinca","rachado","rachada","rachadura","fissura"]},
+  {palavra:"furado",    apelidos:["furada","furo","furos"]},
+  {palavra:"entupido",  apelidos:["entupida","entupiu","entope","obstruido"]},
+  {palavra:"parado",    apelidos:["parada","parou","nao esta funcionando","nao funciona","nao liga","nao esta ligando","desligou sozinho"]},
+  {palavra:"queimado",  apelidos:["queimada","queimou","pifou","fundiu"]},
+  {palavra:"cheiro",    apelidos:["fedendo","fedor","cheiro ruim","cheiro forte","mau cheiro"]},
+  {palavra:"sujo",      apelidos:["suja","sujeira","imundo","encardido"]},
+  {palavra:"mofo",      apelidos:["mofado","mofada","bolor","umidade","infiltracao","infiltrando"]},
+  {palavra:"estranho",  apelidos:["estranha","esquisito","esquisita","diferente do normal"]},
+  {palavra:"faltando",  apelidos:["faltou","acabou","sem estoque","no fim"]},
+  {palavra:"turva",     lugar:"Piscina", apelidos:["turvo","turva","turvada","leitosa","leitoso","opaca","embacada"]},
+  {palavra:"verde",     lugar:"Piscina", apelidos:["esverdeada","esverdeado","verdeando","com alga","algas","alga","limo"]},
+  {palavra:"espuma",    lugar:"Piscina", apelidos:["espumando","espumosa","com espuma"]},
+  {palavra:"baixa",     lugar:"Piscina", apelidos:["nivel baixo","abaixou","nivel esta baixo","perdendo agua"]}
+];
+
+/* Instala o vocabulário sem duplicar. Se já existe algo com o mesmo nome,
+   só completa o que falta — não sobrescreve o que o Rob editou. */
+async function instalarVocabulario(){
+  let novos = 0, completados = 0;
+  const igual = (a,b) => semAcento(a) === semAcento(b);
+
+  async function semear(store, lista, monta, chave){
+    for(let k = 0; k < lista.length; k++){
+      const v = lista[k], nome = chave(v);
+      const ja = S[store].find(x => igual(x.nome, nome));
+      if(ja){
+        const antes = (ja.apelidos||[]).length, ordAntes = ja.ord;
+        ja.apelidos = [...new Set((ja.apelidos||[]).concat(v.apelidos||[]))];
+        if(ja.ord == null) ja.ord = k;
+        if(ja.apelidos.length !== antes || ordAntes !== ja.ord){ await put(store, ja); completados++; }
+        continue;
+      }
+      const o = monta(v); o.ord = k;
+      await put(store, o); S[store].push(o); novos++;
+    }
+  }
+
+  await semear("lugares", V_LUGARES, v => ({
+    id:"lug-"+slug(v.nome), nome:v.nome, icone:v.icone||"", volume:v.volume||null,
+    apelidos:v.apelidos||[], obs:"", criadoEm:new Date().toISOString()
+  }), v=>v.nome);
+
+  await semear("coisas", V_COISAS, v => ({
+    id:"coi-"+slug(v.nome), nome:v.nome, lugarId: v.lugar? "lug-"+slug(v.lugar) : null,
+    apelidos:v.apelidos||[], criadoEm:new Date().toISOString()
+  }), v=>v.nome);
+
+  await semear("produtos", V_PRODUTOS, v => ({
+    id:"prod-"+slug(v.nome), nome:v.nome, unidade:v.unidade||"", apelidos:v.apelidos||[],
+    obs:"", criadoEm:new Date().toISOString()
+  }), v=>v.nome);
+
+  await semear("parametros", V_PARAMETROS, v => ({
+    id:"par-"+slug(v.nome), nome:v.nome, unidade:v.unidade||"", min:v.min, max:v.max,
+    apelidos:v.apelidos||[], criadoEm:new Date().toISOString()
+  }), v=>v.nome);
+
+  await semear("verbos", V_VERBOS, v => ({
+    id:"vrb-"+slug(v.p), nome:v.p, lugarId: v.lugar? "lug-"+slug(v.lugar) : null,
+    apelidos:v.ouvidos||[], criadoEm:new Date().toISOString()
+  }), v=>v.p);
+
+  await semear("atencao", V_ATENCAO, v => ({
+    id:"atn-"+slug(v.palavra), nome:v.palavra, lugarId: v.lugar? "lug-"+slug(v.lugar) : null,
+    apelidos:v.apelidos||[], criadoEm:new Date().toISOString()
+  }), v=>v.palavra);
+
+  ordenar(S.lugares); ordenar(S.parametros); ordenar(S.produtos);
+  return {novos, completados};
+}
+
+/* ============ interpretador (vocabulário fechado) ============ */
+/* O Chrome ouve como quer — "skimmer" pode virar "esquimer". Não dá pra mandar
+   nele. O que dá é comparar o que ele ouviu com a lista do Rob e escolher o mais
+   parecido. Lista pequena e conhecida = acerto alto. O que não bater, ele pergunta. */
+
+const NUM_PT = {zero:0,um:1,uma:1,dois:2,duas:2,tres:3,quatro:4,cinco:5,seis:6,sete:7,oito:8,nove:9,
+  dez:10,onze:11,doze:12,treze:13,quatorze:14,catorze:14,quinze:15,dezesseis:16,dezessete:17,dezoito:18,
+  dezenove:19,vinte:20,trinta:30,quarenta:40,cinquenta:50,sessenta:60,setenta:70,oitenta:80,noventa:90,
+  cem:100,cento:100,duzentos:200,trezentos:300,quatrocentos:400,quinhentos:500,mil:1000,meio:0.5,meia:0.5};
+
+const UNIDADE_TOK = /^(hora|horas|minuto|minutos|litro|litros|quilo|quilos|kg|grama|gramas|dia|dias|metro|metros|copo|copos|balde|baldes)$/;
+
+/* Quebra a fala em fichas, guardando de qual palavra original cada ficha veio.
+   Isso é o que permite mostrar a observação com as palavras do Rob, com acento
+   e tudo, mesmo depois de eu ter mexido no texto pra entender. */
+function tokenizar(fala){
+  const orig = String(fala||"").trim().split(/\s+/).filter(Boolean);
+
+  const passo = [];
+  orig.forEach((w,i) => {
+    let x = semAcento(w);
+    x = x.replace(/(\d)[.,](\d)/g, "$1\u0001$2");          /* protege 7,2 e 0.5 */
+    const fim = /[.;!?,]/.test(x);
+    x = x.replace(/[^a-z0-9\u0001]/g, "");
+    x = x.replace(/\u0001/g, ".");
+    if(x) passo.push({t:x, i});
+    if(fim) passo.push({t:"|", i});
+  });
+
+  /* números por extenso viram dígitos: "dois" -> 2, "um e meio" -> 1.5 */
+  const ehNum = (t, prox) => {
+    if(NUM_PT[t] === undefined) return false;
+    if((t === "meio" || t === "meia") && !UNIDADE_TOK.test(prox||"")) return false;
+    return true;
+  };
+  const toks = [];
+  let k = 0;
+  while(k < passo.length){
+    const cur = passo[k];
+    if(cur.t === "|" || !ehNum(cur.t, passo[k+1] && passo[k+1].t)){
+      toks.push({t:cur.t, a:cur.i, b:cur.i}); k++; continue;
+    }
+    let val = NUM_PT[cur.t]; const a = cur.i; let b = cur.i; k++;
+    while(k+1 < passo.length && passo[k].t === "e" && NUM_PT[passo[k+1].t] !== undefined){
+      val += NUM_PT[passo[k+1].t]; b = passo[k+1].i; k += 2;
+    }
+    toks.push({t:String(val), a, b});
+  }
+
+  /* "sete vírgula dois" -> 7.2 */
+  for(let j = toks.length-2; j >= 1; j--){
+    if(/^(virgula|ponto|virgola)$/.test(toks[j].t) &&
+       /^\d+$/.test(toks[j-1].t) && /^\d+$/.test(toks[j+1].t)){
+      toks.splice(j-1, 3, {t: toks[j-1].t+"."+toks[j+1].t, a: toks[j-1].a, b: toks[j+1].b});
+      j--;
+    }
+  }
+  return {orig, toks};
+}
+
+/* texto original de um pedaço da fala, do jeito que o Rob falou */
+function trechoOriginal(orig, toks){
+  const reais = toks.filter(t => t.t !== "|");
+  if(!reais.length) return "";
+  const a = Math.min.apply(null, reais.map(t=>t.a));
+  const b = Math.max.apply(null, reais.map(t=>t.b));
+  return orig.slice(a, b+1).join(" ").replace(/^[\s,;.]+|[\s,;.]+$/g, "");
+}
+
+/* distância de edição: quantas letras precisam mudar de uma palavra pra outra */
+function distancia(a, b){
+  const m = a.length, n = b.length;
+  if(!m) return n; if(!n) return m;
+  let ant = new Array(n+1), atual = new Array(n+1);
+  for(let j = 0; j <= n; j++) ant[j] = j;
+  for(let i = 1; i <= m; i++){
+    atual[0] = i;
+    for(let j = 1; j <= n; j++)
+      atual[j] = Math.min(ant[j] + 1, atual[j-1] + 1, ant[j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+    const t = ant; ant = atual; atual = t;
+  }
+  return ant[n];
+}
+const parecido = (a, b) => { const m = Math.max(a.length, b.length); return m ? 1 - distancia(a,b)/m : 0; };
+
+const normalizarFala = t => tokenizar(t).toks.map(x=>x.t).join(" ");
+
+const BOBA = /^(a|o|as|os|na|no|nas|nos|da|do|das|dos|de|em|por|com|e|um|uma|que|pra|para|hoje|ontem|esta|estao|ta|tao|foi|muito|ja|so|mais|bem|aqui|la|isso|tudo|nao|sim)$/;
+
+/* termos = todas as formas de chamar a mesma coisa */
+function termosDe(item){
+  const lista = [item.nome].concat(item.apelidos || []);
+  return [...new Set(lista.map(x => normalizarFala(x)))].filter(Boolean);
+}
+/* termo curtinho (ph, uv) não pode casar por semelhança — só exato,
+   senão "ph" casa com "pra" e registra errado, calado. */
+const curto = t => t.replace(/\s/g,"").length <= 3;
+
+function acharNaLista(toks, itens, minSim){
+  let melhor = null;
+  itens.forEach(it => {
+    termosDe(it).forEach(termo => {
+      const nt = termo.split(" ").length;
+      for(let i = 0; i < toks.length; i++){
+        for(let n = Math.max(1, nt-1); n <= nt+1 && i+n <= toks.length; n++){
+          const arr = toks.slice(i, i+n);
+          if(arr.some(x => x.t === "|")) continue;
+          const janela = arr.map(x=>x.t).join(" ");
+          if(!janela) continue;
+          if(BOBA.test(janela) && janela !== termo) continue;
+          const s = curto(termo) ? (janela === termo ? 1 : 0) : parecido(janela, termo);
+          if(s >= minSim && (!melhor || s > melhor.s + 0.001 ||
+             (Math.abs(s - melhor.s) <= 0.001 && termo.length > melhor.termo.length)))
+            melhor = {s, item:it, termo, i, n};
+        }
+      }
+    });
+  });
+  return melhor;
+}
+
+/* a janela da fala que mais se parece com o item — usada no botão "Ensinar" */
+function melhorJanela(toks, item){
+  const termos = termosDe(item);
+  let melhor = null;
+  termos.forEach(termo => {
+    const nt = termo.split(" ").length;
+    for(let i = 0; i < toks.length; i++){
+      for(let n = Math.max(1, nt-1); n <= nt+1 && i+n <= toks.length; n++){
+        const arr = toks.slice(i, i+n);
+        if(arr.some(x => x.t === "|")) continue;
+        const j = arr.map(x=>x.t).join(" ");
+        if(j.length < 3 || BOBA.test(j)) continue;
+        const s = parecido(j, termo);
+        if(!melhor || s > melhor.s) melhor = {s, janela:j};
+      }
+    }
+  });
+  return melhor;
+}
+
+/* ---- medições: "pH 7,2 e cloro 1,5" são DUAS leituras, não uma ---- */
+const LIGACAO = /^(esta|ta|em|no|na|de|do|da|deu|marcou|marca|foi|e|com|ficou|dando|deu|o|a|ficando|resultado)$/;
+const UNI_QTD = /^(kg|quilo|quilos|kilo|kilos|litro|litros|l|ml|mililitro|mililitros|g|grama|gramas|copo|copos|balde|baldes|saco|sacos|pastilha|pastilhas|unidade|unidades|un)$/;
+const ehNumTok = t => /^\d+(?:\.\d+)?$/.test(t);
+
+function acharMedicoes(toks, parametros){
+  const achados = [];
+  parametros.forEach(p => {
+    termosDe(p).forEach(termo => {
+      const nt = termo.split(" ").length;
+      for(let i = 0; i < toks.length; i++){
+        for(let n = Math.max(1, nt-1); n <= nt+1 && i+n <= toks.length; n++){
+          const arr = toks.slice(i, i+n);
+          if(arr.some(x => x.t === "|")) continue;
+          const janela = arr.map(x=>x.t).join(" ");
+          const s = curto(termo) ? (janela === termo ? 1 : 0) : parecido(janela, termo);
+          if(s < 0.80) continue;
+
+          let valor = null, fim = i+n;
+          for(let k = i+n; k < Math.min(toks.length, i+n+4); k++){
+            const t = toks[k].t;
+            if(t === "|") break;
+            if(ehNumTok(t)){
+              if(toks[k+1] && UNI_QTD.test(toks[k+1].t)) break;   /* "2 kg de cloro" é produto, não leitura */
+              valor = parseFloat(t); fim = k; break;
+            }
+            if(!LIGACAO.test(t)) break;
+          }
+          if(valor === null){
+            for(let k = i-1; k >= Math.max(0, i-3); k--){
+              const t = toks[k].t;
+              if(t === "|") break;
+              if(ehNumTok(t)){
+                if(toks[k+1] && UNI_QTD.test(toks[k+1].t)) break;
+                valor = parseFloat(t); break;
+              }
+              if(!LIGACAO.test(t)) break;
+            }
+          }
+          if(valor === null) continue;
+          if(achados.some(x => x.parametro.id === p.id)) continue;
+          achados.push({parametro:p, valor, i, n, fim, s});
+        }
+      }
+    });
+  });
+  achados.sort((a,b)=>a.i-b.i);
+  return achados;
+}
+
+/* ---- data ---- */
+const MESES = {janeiro:1,fevereiro:2,marco:3,abril:4,maio:5,junho:6,julho:7,
+               agosto:8,setembro:9,outubro:10,novembro:11,dezembro:12};
+const dataISO = (y,m,d) => y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+
+function acharData(txt, hoje){
+  if(/\banteontem\b/.test(txt)) return new Date(dayStart(hoje) - 2*MS_DAY).toISOString().slice(0,10);
+  if(/\bontem\b/.test(txt))     return new Date(dayStart(hoje) - 1*MS_DAY).toISOString().slice(0,10);
+  const [ay, am, ad] = hoje.split("-").map(Number);
+  let m = txt.match(/\b(\d{1,2})\s+de\s+([a-z]+)/);
+  if(m){
+    const nome = Object.keys(MESES).find(x => parecido(m[2], x) >= 0.8);
+    if(nome){
+      const dia = +m[1], mes = MESES[nome];
+      let ano = ay;
+      if(mes > am || (mes === am && dia > ad)) ano--;
+      return dataISO(ano, mes, dia);
+    }
+  }
+  m = txt.match(/\bdia (\d{1,2})\b/);
+  if(m){
+    const dia = +m[1];
+    let mes = am, ano = ay;
+    if(dia > ad){ mes--; if(mes < 1){ mes = 12; ano--; } }
+    return dataISO(ano, mes, dia);
+  }
+  return hoje;
+}
+
+/* ---- quantidade de produto ---- */
+function acharQuantidade(txt){
+  const n = x => parseFloat(x);
+  let m;
+  if((m = txt.match(/(\d+(?:\.\d+)?)\s*(?:litros?|l)\b/)))              return {q:n(m[1]), u:"L"};
+  if((m = txt.match(/(\d+(?:\.\d+)?)\s*(?:ml|mililitros?)\b/)))         return {q:n(m[1]), u:"mL"};
+  if((m = txt.match(/(\d+(?:\.\d+)?)\s*(?:quilos?|kilos?|kg)\b/)))      return {q:n(m[1]), u:"kg"};
+  if((m = txt.match(/(\d+(?:\.\d+)?)\s*(?:gramas?|g)\b/)))              return {q:n(m[1]), u:"g"};
+  if((m = txt.match(/(\d+(?:\.\d+)?)\s*(?:sacos?|baldes?|copos?|pastilhas?|unidades?|un)\b/))) return {q:n(m[1]), u:"un"};
+  return null;
+}
+
+/* ---- quebra a fala em orações e acha a âncora de cada uma ---- */
+const CONECTOR = /^(e|tambem|mas|porem|entao|depois|ai|dai|ja|alem disso)$/;
+
+function partir(toks){
+  const partes = []; let cur = [];
+  toks.forEach(t => {
+    if(t.t === "|" || CONECTOR.test(t.t)){ if(cur.length) partes.push(cur); cur = []; return; }
+    cur.push(t);
+  });
+  if(cur.length) partes.push(cur);
+  return partes;
+}
+
+/* Uma âncora é o motivo de aquele pedaço virar um registro: uma leitura,
+   um verbo, ou uma coisa/lugar citado. Pedaço sem âncora gruda no anterior. */
+function ancorar(toks, ctx){
+  const meds = acharMedicoes(toks, ctx.parametros);
+  let verbo = acharNaLista(toks, ctx.verbos, 0.74);
+  let coisa = acharNaLista(toks, ctx.coisas, 0.78);
+  const lugar = acharNaLista(toks, ctx.lugares, 0.78);
+
+  /* "as plantas" quase vira o verbo "plantar". Quando verbo e coisa disputam as
+     MESMAS palavras, ganha quem se parece mais — empate mantém os dois
+     ("limpei o filtro" é verbo e coisa ao mesmo tempo, e está certo). */
+  if(verbo && coisa){
+    const cruza = verbo.i < coisa.i + coisa.n && coisa.i < verbo.i + verbo.n;
+    if(cruza){
+      if(coisa.s > verbo.s + 0.001) verbo = null;
+      else if(verbo.s > coisa.s + 0.001) coisa = null;
+    }
+  }
+  const cands = [];
+  if(meds.length) cands.push({tipo:"medicao", i:meds[0].i, meds});
+  if(verbo) cands.push({tipo:"servico", i:verbo.i, verbo});
+  if(coisa) cands.push({tipo:"observacao", i:coisa.i, coisa});
+  if(lugar) cands.push({tipo:"observacao", i:lugar.i, lugar});
+  if(!cands.length) return null;
+  const inicio = Math.min.apply(null, cands.map(c=>c.i));
+  const prio = {medicao:0, servico:1, observacao:2};
+  cands.sort((a,b)=>prio[a.tipo]-prio[b.tipo]);
+  return {tipo:cands[0].tipo, inicio, meds, verbo, coisa, lugar};
+}
+
+function interpretar(falaOriginal, ctx){
+  ctx = ctx || {};
+  const A = {
+    lugares:    ctx.lugares    || S.lugares,
+    coisas:     ctx.coisas     || S.coisas,
+    produtos:   ctx.produtos   || S.produtos,
+    parametros: ctx.parametros || S.parametros,
+    verbos:     ctx.verbos     || S.verbos,
+    atencao:    ctx.atencao    || S.atencao,
+    hoje:       ctx.hoje       || todayISO()
+  };
+
+  const T = tokenizar(falaOriginal);
+  let partes = partir(T.toks).map(toks => ({toks, anc: ancorar(toks, A)}));
+
+  /* se a âncora não está no começo, o começo pertence à oração anterior:
+     "…transparente | as baunilhas estão crescendo" */
+  for(let i = 1; i < partes.length; i++){
+    const p = partes[i];
+    if(p.anc && p.anc.inicio > 0){
+      const antes = p.toks.slice(0, p.anc.inicio);
+      partes[i-1].toks = partes[i-1].toks.concat(antes);
+      p.toks = p.toks.slice(p.anc.inicio);
+      p.anc = ancorar(p.toks, A);
+    }
+  }
+  /* oração sem âncora gruda na anterior (ou na próxima, se for a primeira) */
+  const juntas = [];
+  partes.forEach(p => {
+    if(p.anc || !juntas.length){ juntas.push(p); return; }
+    const ult = juntas[juntas.length-1];
+    ult.toks = ult.toks.concat(p.toks);
+  });
+  if(juntas.length > 1 && !juntas[0].anc){
+    juntas[1].toks = juntas[0].toks.concat(juntas[1].toks);
+    juntas[1].anc = ancorar(juntas[1].toks, A);
+    juntas.shift();
+  }
+  partes = juntas.filter(p => p.toks.length);
+
+  const drafts = [];
+  let lugarHerdado = null;
+
+  partes.forEach(p => {
+    const txt = p.toks.map(x=>x.t).join(" ");
+    const original = trechoOriginal(T.orig, p.toks);
+    const anc = p.anc || ancorar(p.toks, A);
+    const data = acharData(txt, A.hoje);
+    let hora = nowHM();
+    if(/\bde manha|pela manha\b/.test(txt)) hora = "08:00";
+    else if(/\bde tarde|a tarde|pela tarde\b/.test(txt)) hora = "15:00";
+
+    /* onde isso aconteceu */
+    const lugarCitado = anc && anc.lugar ? anc.lugar.item.id : null;
+    const coisaAchada = anc && anc.coisa ? anc.coisa.item : null;
+    const verboAchado = anc && anc.verbo ? anc.verbo.item : null;
+    let lugarId = lugarCitado
+               || (coisaAchada && coisaAchada.lugarId)
+               || (verboAchado && verboAchado.lugarId)
+               || null;
+
+    /* medições: uma leitura de cada parâmetro citado */
+    if(anc && anc.tipo === "medicao" && anc.meds.length){
+      const ondeMede = lugarId || ("lug-"+slug("Piscina"));
+      anc.meds.forEach(m => {
+        drafts.push({tipo:"medicao", parametroId:m.parametro.id, valor:m.valor,
+                     lugarId:ondeMede, data, hora, obs:"", _txt:txt, _fala:original});
+      });
+      lugarHerdado = ondeMede;
+      return;
+    }
+
+    if(!lugarId) lugarId = lugarHerdado;
+
+    /* palavra de atenção — algumas só valem num lugar */
+    let atencao = false, motivo = null;
+    A.atencao.forEach(w => {
+      if(atencao) return;
+      if(w.lugarId && w.lugarId !== lugarId) return;
+      const bate = acharNaLista(p.toks, [w], 0.86);
+      if(bate){ atencao = true; motivo = w.nome; }
+    });
+
+    if(anc && anc.tipo === "servico"){
+      const prod = acharNaLista(p.toks, A.produtos, 0.76);
+      const qtd = acharQuantidade(txt);
+      const d = {tipo:"servico", verbo:verboAchado.nome, lugarId, data, hora,
+                 coisaId: coisaAchada ? coisaAchada.id : null,
+                 produtoId: prod ? prod.item.id : null,
+                 quantidade: qtd ? qtd.q : null,
+                 unidade: qtd ? qtd.u : (prod ? prod.item.unidade : null),
+                 obs:"", atencao, motivo, _txt:txt, _fala:original,
+                 _verboItem:verboAchado, _coisaItem:coisaAchada,
+                 _prodItem: prod ? prod.item : null, _lugarCitado: lugarCitado};
+      if(!qtd && prod) d.unidade = prod.item.unidade || null;
+      /* o que sobrou da frase, se disser algo além do verbo, vira observação do registro */
+      if(atencao) d.obs = original;
+      drafts.push(d);
+      if(lugarId) lugarHerdado = lugarId;
+      return;
+    }
+
+    /* observação: guarda a frase como o Rob falou */
+    drafts.push({tipo:"observacao", lugarId, data, hora, obs: original,
+                 coisaId: coisaAchada ? coisaAchada.id : null,
+                 atencao, motivo, _txt:txt, _fala:original,
+                 _coisaItem:coisaAchada, _lugarCitado:lugarCitado});
+    if(lugarId) lugarHerdado = lugarId;
+  });
+
+  /* nada reconhecido: uma observação só, com a fala inteira */
+  if(!drafts.length)
+    return [{tipo:"observacao", lugarId:null, data:A.hoje, hora:nowHM(),
+             obs:String(falaOriginal).trim(), atencao:false, _txt:normalizarFala(falaOriginal)}];
+
+  return drafts;
+}
+
+/* ============ avisos de faixa ============ */
+/* Só diz que saiu da faixa e qual é a faixa. Não receita dose de químico:
+   errar aí estraga a água e pode machucar alguém. A conta é do Rob. */
+function textoFaixa(p){
+  if(p.min==null && p.max==null) return "";
+  if(p.min!=null && p.max!=null) return fmtNum(p.min)+" a "+fmtNum(p.max)+(p.unidade?" "+p.unidade:"");
+  if(p.min!=null) return "acima de "+fmtNum(p.min)+(p.unidade?" "+p.unidade:"");
+  return "abaixo de "+fmtNum(p.max)+(p.unidade?" "+p.unidade:"");
+}
+function avisoFaixa(p, valor){
+  const f = foraDaFaixa(p, valor);
+  if(!f) return null;
+  return p.nome+" "+fmtNum(valor)+(p.unidade?" "+p.unidade:"")+" está "+f+
+         " — o ideal é "+textoFaixa(p)+".";
+}
+
+/* ============ formulários ============ */
+function opcoes(lista){ return lista.map(x=>({label:x.nome, value:x.id})); }
+const defLugar = pre => (pre&&pre.lugarId) || S.config.ultimoLugar || (S.lugares[0]?S.lugares[0].id:"");
+
+function toggleChip(label, val){
+  const w = el("div","chips"); let cur = !!val;
+  const c = el("button","chip"+(cur?" on":""), esc(label)); c.type="button";
+  c.onclick = ()=>{ cur=!cur; c.classList.toggle("on",cur); };
+  w.appendChild(c); w.value = ()=>cur; return w;
+}
+function campoLugar(sel, aoCriar){
+  const wrap = el("div");
+  wrap.appendChild(field("Lugar", sel));
+  const nv = el("button","linkbtn","+ Novo lugar");
+  nv.onclick = ()=>formLugar(null, aoCriar);
+  wrap.appendChild(nv);
+  return wrap;
+}
+function precisaLugares(){
+  if(S.lugares.length) return false;
+  const w = el("div");
+  w.appendChild(el("p",null,"Você ainda não tem nenhum lugar cadastrado. Cadastre pelo menos um — Piscina, por exemplo."));
+  openSheet("Cadastre um lugar primeiro", w, [btn("Cadastrar lugar","pri",()=>formLugar())]);
+  return true;
+}
+
+function formServico(pre){
+  if(precisaLugares()) return; pre = pre||{};
+  const eb = errBox(), w = el("div"); w.appendChild(eb);
+  const fLugar = selectEl(opcoes(S.lugares), defLugar(pre));
+  const fVerbo = input("text", pre.verbo||"", "ex: aspirei, escovei, pintei");
+  const fCoisa = selectEl(opcoes(S.coisas), pre.coisaId||"", "— nenhuma —");
+  const fProd  = selectEl(opcoes(S.produtos), pre.produtoId||"", "— nenhum —");
+  const fQtd   = input("number", pre.quantidade!=null?pre.quantidade:"", "quantidade");
+  const fUni   = selectEl(UNIDADES.map(u=>({label:u,value:u})), pre.unidade||"", "—");
+  const fData  = input("date", pre.data||todayISO());
+  const fHora  = input("time", pre.hora||nowHM());
+  const fObs   = textarea(pre.obs||"", "opcional");
+  const fAt    = toggleChip("Marcar pra olhar depois", pre.atencao);
+
+  fProd.onchange = ()=>{ const p = produtoById(fProd.value); if(p && p.unidade && !fUni.value) fUni.value = p.unidade; };
+  const snap = ()=>Object.assign({},pre,{verbo:fVerbo.value,coisaId:fCoisa.value,produtoId:fProd.value,
+    quantidade:fQtd.value,unidade:fUni.value,data:fData.value,hora:fHora.value,obs:fObs.value,atencao:fAt.value()});
+
+  w.appendChild(campoLugar(fLugar, nl=>formServico(Object.assign(snap(),{lugarId:nl.id}))));
+  w.appendChild(field("O que você fez", fVerbo));
+  w.appendChild(field("Em que", fCoisa, "Bomba, filtro, parede, sofá… opcional."));
+  w.appendChild(field("Produto", fProd));
+  const t = el("div","two"); t.appendChild(field("Quantidade",fQtd)); t.appendChild(field("Unidade",fUni)); w.appendChild(t);
+  const t2 = el("div","two"); t2.appendChild(field("Data",fData)); t2.appendChild(field("Hora",fHora)); w.appendChild(t2);
+  w.appendChild(field("Observação", fObs));
+  w.appendChild(field("Atenção", fAt, "Marque se é algo que precisa voltar depois."));
+
+  openSheet("Registrar serviço", w, [
+    btn("Cancelar","sec",()=>pre.aoCancelar?pre.aoCancelar():closeSheet()),
+    btn("Salvar","pri", async()=>{
+      if(!fLugar.value) return showErr(eb,"Escolha o lugar.");
+      if(!fVerbo.value.trim()) return showErr(eb,"Diga o que você fez.");
+      const r = {id:uid(), tipo:"servico", lugarId:fLugar.value, verbo:fVerbo.value.trim(),
+                 coisaId:fCoisa.value||null, produtoId:fProd.value||null,
+                 quantidade:num(fQtd.value), unidade:fUni.value||null,
+                 data:fData.value||todayISO(), hora:fHora.value||nowHM(),
+                 obs:fObs.value.trim(), atencao:fAt.value(), resolvido:false,
+                 gravacaoId:pre.gravacaoId||null, criadoEm:new Date().toISOString()};
+      await salvarRegistro(r,pre); toast("Serviço registrado");
+    })]);
+}
+
+function formMedicao(pre){
+  if(precisaLugares()) return; pre = pre||{};
+  if(!S.parametros.length){
+    const w = el("div");
+    w.appendChild(el("p",null,"Cadastre o que você mede — nome, unidade e a faixa que você considera boa."));
+    openSheet("Cadastre uma medição primeiro", w, [btn("Cadastrar","pri",()=>formParametro(null,()=>formMedicao(pre)))]);
+    return;
+  }
+  const eb = errBox(), w = el("div"); w.appendChild(eb);
+  const fLugar = selectEl(opcoes(S.lugares), defLugar(pre));
+  const fPar   = selectEl(opcoes(S.parametros), pre.parametroId||"");
+  const fVal   = input("number", pre.valor!=null?pre.valor:"", "valor lido");
+  fVal.step = "any";
+  const fData  = input("date", pre.data||todayISO());
+  const fHora  = input("time", pre.hora||nowHM());
+  const fObs   = textarea(pre.obs||"", "opcional");
+  const banner = el("div","aviso hide");
+
+  const conferir = ()=>{
+    const p = paramById(fPar.value), v = num(fVal.value);
+    if(!p || v==null){ banner.classList.add("hide"); return; }
+    const a = avisoFaixa(p, v);
+    banner.className = "aviso" + (a?" bad":"");
+    banner.textContent = a || (p.nome+" "+fmtNum(v)+" está dentro da faixa ("+textoFaixa(p)+").");
+    if(!a) banner.className = "aviso";
+    banner.classList.remove("hide");
+  };
+  fPar.onchange = conferir; fVal.oninput = conferir;
+
+  const snap = ()=>Object.assign({},pre,{parametroId:fPar.value,valor:fVal.value,data:fData.value,hora:fHora.value,obs:fObs.value});
+  w.appendChild(campoLugar(fLugar, nl=>formMedicao(Object.assign(snap(),{lugarId:nl.id}))));
+  const fp = el("div"); fp.appendChild(field("O que você mediu", fPar));
+  const nv = el("button","linkbtn","+ Nova medição no vocabulário");
+  nv.onclick = ()=>formParametro(null, novo=>formMedicao(Object.assign(snap(),{parametroId:novo.id})));
+  fp.appendChild(nv); w.appendChild(fp);
+  w.appendChild(field("Valor", fVal));
+  w.appendChild(banner);
+  const t = el("div","two"); t.appendChild(field("Data",fData)); t.appendChild(field("Hora",fHora)); w.appendChild(t);
+  w.appendChild(field("Observação", fObs));
+  conferir();
+
+  openSheet("Registrar medição", w, [
+    btn("Cancelar","sec",()=>pre.aoCancelar?pre.aoCancelar():closeSheet()),
+    btn("Salvar","pri", async()=>{
+      if(!fPar.value) return showErr(eb,"Escolha o que foi medido.");
+      if(num(fVal.value)==null) return showErr(eb,"Escreva o valor lido.");
+      const p = paramById(fPar.value), v = num(fVal.value);
+      const r = {id:uid(), tipo:"medicao", lugarId:fLugar.value||null, parametroId:fPar.value, valor:v,
+                 data:fData.value||todayISO(), hora:fHora.value||nowHM(), obs:fObs.value.trim(),
+                 atencao:!!foraDaFaixa(p,v), resolvido:false,
+                 gravacaoId:pre.gravacaoId||null, criadoEm:new Date().toISOString()};
+      await salvarRegistro(r,pre);
+      toast(avisoFaixa(p,v) || "Medição registrada");
+    })]);
+}
+
+function formObs(pre){
+  pre = pre||{};
+  const eb = errBox(), w = el("div"); w.appendChild(eb);
+  const fLugar = selectEl(opcoes(S.lugares), pre.lugarId||"", "— sem lugar —");
+  const fCoisa = selectEl(opcoes(S.coisas), pre.coisaId||"", "— nenhuma —");
+  const fData  = input("date", pre.data||todayISO());
+  const fTxt   = textarea(pre.obs||"", "O que você viu? ex: a bomba está com um ruído pequeno");
+  const fAt    = toggleChip("Marcar pra olhar depois", pre.atencao);
+  let foto = pre.foto||null;
+  const fotoWrap = el("div");
+  const fb = el("button","photobtn","&#128247; Tirar ou escolher foto"); fb.style.marginTop = "0";
+  const prev = el("div");
+  const mostrar = ()=>{ prev.innerHTML=""; if(foto){ prev.appendChild(imgFrom(foto,"photoprev"));
+      const rm = el("button","linkbtn","Remover foto"); rm.onclick = ()=>{foto=null;mostrar();}; prev.appendChild(rm); } };
+  fb.onclick = async()=>{ const b = await pickPhoto(); if(b){ foto=b; mostrar(); } };
+  fotoWrap.appendChild(fb); fotoWrap.appendChild(prev); mostrar();
+
+  const snap = ()=>Object.assign({},pre,{lugarId:fLugar.value,coisaId:fCoisa.value,data:fData.value,obs:fTxt.value,foto:foto,atencao:fAt.value()});
+  w.appendChild(campoLugar(fLugar, nl=>formObs(Object.assign(snap(),{lugarId:nl.id}))));
+  w.appendChild(field("Em que", fCoisa, "opcional"));
+  w.appendChild(field("Data", fData));
+  w.appendChild(field("Observação", fTxt));
+  w.appendChild(field("Atenção", fAt, "Marcado, aparece na tela inicial até você dizer que resolveu."));
+  w.appendChild(field("Foto", fotoWrap, "A foto fica guardada com a data e o lugar."));
+
+  openSheet("Anotar observação", w, [
+    btn("Cancelar","sec",()=>pre.aoCancelar?pre.aoCancelar():closeSheet()),
+    btn("Salvar","pri", async()=>{
+      if(!fTxt.value.trim() && !foto) return showErr(eb,"Escreva algo ou anexe uma foto.");
+      const r = {id:uid(), tipo:"observacao", lugarId:fLugar.value||null, coisaId:fCoisa.value||null,
+                 data:fData.value||todayISO(), hora:pre.hora||nowHM(), obs:fTxt.value.trim(),
+                 foto:foto||null, atencao:fAt.value(), resolvido:false,
+                 gravacaoId:pre.gravacaoId||null, criadoEm:new Date().toISOString()};
+      await salvarRegistro(r,pre); toast("Observação salva");
+    })]);
+}
+
+async function salvarRegistro(r,pre){
+  if(pre && pre.aoSalvar){ pre.aoSalvar(r); return; }
+  await put("registros",r); S.registros.push(r);
+  if(r.lugarId) await saveCfg({ultimoLugar:r.lugarId});
+  if(pre && pre.gravacaoId){
+    const g = S.gravacoes.find(x=>x.id===pre.gravacaoId);
+    if(g){ g.status="processada"; g.lugarId = r.lugarId||null; await put("gravacoes",g); }
+  }
+  closeSheet(); render();
+}
+
+/* ============ vocabulário: cadastros ============ */
+function campoApelidos(item){
+  return input("text",(item.apelidos||[]).join(", "),"ex: moto-bomba, motor, bombinha");
+}
+const listaApelidos = campo => campo.value.split(",").map(s=>s.trim()).filter(Boolean);
+
+function formLugar(existing, then){
+  const a = existing||{};
+  const eb = errBox(), w = el("div"); w.appendChild(eb);
+  const fNome = input("text", a.nome||"", "ex: Piscina, Sala de máquinas");
+  const fVol  = input("number", a.volume!=null?a.volume:"", "ex: 25000");
+  const fApel = campoApelidos(a);
+  const fObs  = textarea(a.obs||"", "opcional");
+  w.appendChild(field("Nome", fNome));
+  w.appendChild(field("Volume em litros", fVol, "Só faz sentido pra piscina. É o que vai permitir calcular dose mais pra frente."));
+  w.appendChild(field("Como você fala", fApel, "Separe por vírgula. É isso que faz o comando de voz reconhecer o lugar."));
+  w.appendChild(field("Observação", fObs));
+  const foot = [btn("Cancelar","sec",closeSheet), btn("Salvar","pri", async()=>{
+    if(!fNome.value.trim()) return showErr(eb,"Dê um nome ao lugar.");
+    const o = {id:a.id||("lug-"+slug(fNome.value)), nome:fNome.value.trim(), icone:a.icone||"",
+               volume:num(fVol.value), apelidos:listaApelidos(fApel), obs:fObs.value.trim(),
+               criadoEm:a.criadoEm||new Date().toISOString()};
+    await put("lugares",o);
+    const ix = S.lugares.findIndex(x=>x.id===o.id); if(ix>=0)S.lugares[ix]=o; else S.lugares.push(o);
+    closeSheet(); render(); toast(existing?"Lugar atualizado":"Lugar cadastrado"); if(then)then(o);
+  })];
+  if(existing) foot.unshift(btn("Excluir","dng",()=>confirmDel("Excluir \""+a.nome+"\"?","Os registros dele continuam no diário.", async()=>{
+    await del("lugares",a.id); S.lugares = S.lugares.filter(x=>x.id!==a.id); closeSheet(); telaVocab(); toast("Lugar excluído");
+  })));
+  openSheet(existing?"Editar lugar":"Novo lugar", w, foot);
+}
+
+function formCoisa(existing, then){
+  const a = existing||{};
+  const eb = errBox(), w = el("div"); w.appendChild(eb);
+  const fNome = input("text", a.nome||"", "ex: Bomba, Sofá, Janela");
+  const fLugar = selectEl(opcoes(S.lugares), a.lugarId||"", "— qualquer lugar —");
+  const fApel = campoApelidos(a);
+  w.appendChild(field("Nome", fNome));
+  w.appendChild(field("Fica em que lugar", fLugar, "Quando você citar esta coisa, o app já sabe o lugar."));
+  w.appendChild(field("Como você fala", fApel));
+  const foot = [btn("Cancelar","sec",closeSheet), btn("Salvar","pri", async()=>{
+    if(!fNome.value.trim()) return showErr(eb,"Dê um nome.");
+    const o = {id:a.id||("coi-"+slug(fNome.value)), nome:fNome.value.trim(), lugarId:fLugar.value||null,
+               apelidos:listaApelidos(fApel), criadoEm:a.criadoEm||new Date().toISOString()};
+    await put("coisas",o);
+    const ix = S.coisas.findIndex(x=>x.id===o.id); if(ix>=0)S.coisas[ix]=o; else S.coisas.push(o);
+    closeSheet(); telaVocab(); toast(existing?"Atualizado":"Cadastrado"); if(then)then(o);
+  })];
+  if(existing) foot.unshift(btn("Excluir","dng",()=>confirmDel("Excluir \""+a.nome+"\"?","", async()=>{
+    await del("coisas",a.id); S.coisas = S.coisas.filter(x=>x.id!==a.id); closeSheet(); telaVocab(); toast("Excluído");
+  })));
+  openSheet(existing?"Editar coisa":"Nova coisa", w, foot);
+}
+
+function formVerbo(existing, then){
+  const a = existing||{};
+  const eb = errBox(), w = el("div"); w.appendChild(eb);
+  const fNome = input("text", a.nome||"", "ex: aspirei, retrolavei");
+  const fLugar = selectEl(opcoes(S.lugares), a.lugarId||"", "— depende do que eu citar —");
+  const fApel = campoApelidos(a);
+  w.appendChild(field("Como você fala o verbo", fNome, "Escreva do jeito que você fala: “aspirei”, não “aspirar”."));
+  w.appendChild(field("Lugar de sempre", fLugar, "Deixe em branco se esse verbo serve em vários lugares."));
+  w.appendChild(field("Outras formas", fApel, "As que o celular escreve errado também: aspirar, as pirei…"));
+  const foot = [btn("Cancelar","sec",closeSheet), btn("Salvar","pri", async()=>{
+    if(!fNome.value.trim()) return showErr(eb,"Escreva o verbo.");
+    const o = {id:a.id||("vrb-"+slug(fNome.value)), nome:fNome.value.trim(), lugarId:fLugar.value||null,
+               apelidos:listaApelidos(fApel), criadoEm:a.criadoEm||new Date().toISOString()};
+    await put("verbos",o);
+    const ix = S.verbos.findIndex(x=>x.id===o.id); if(ix>=0)S.verbos[ix]=o; else S.verbos.push(o);
+    closeSheet(); telaVocab(); toast(existing?"Atualizado":"Cadastrado"); if(then)then(o);
+  })];
+  if(existing) foot.unshift(btn("Excluir","dng",()=>confirmDel("Excluir \""+a.nome+"\"?","", async()=>{
+    await del("verbos",a.id); S.verbos = S.verbos.filter(x=>x.id!==a.id); closeSheet(); telaVocab(); toast("Excluído");
+  })));
+  openSheet(existing?"Editar verbo":"Novo verbo", w, foot);
+}
+
+function formProduto(existing, then){
+  const a = existing||{};
+  const eb = errBox(), w = el("div"); w.appendChild(eb);
+  const fNome = input("text", a.nome||"", "ex: Cloro granulado");
+  const fUni  = chipGroup(UNIDADES, a.unidade||null);
+  const fApel = campoApelidos(a);
+  const fObs  = textarea(a.obs||"", "onde compra, o que diz a bula…");
+  w.appendChild(field("Nome", fNome));
+  w.appendChild(field("Unidade", fUni));
+  w.appendChild(field("Como você fala", fApel));
+  w.appendChild(field("Observação", fObs, "A dose fica com você e com a bula. O app não receita."));
+  const foot = [btn("Cancelar","sec",closeSheet), btn("Salvar","pri", async()=>{
+    if(!fNome.value.trim()) return showErr(eb,"Dê um nome ao produto.");
+    const o = {id:a.id||("prod-"+slug(fNome.value)), nome:fNome.value.trim(), unidade:fUni.value()||"",
+               apelidos:listaApelidos(fApel), obs:fObs.value.trim(), criadoEm:a.criadoEm||new Date().toISOString()};
+    await put("produtos",o);
+    const ix = S.produtos.findIndex(x=>x.id===o.id); if(ix>=0)S.produtos[ix]=o; else S.produtos.push(o);
+    closeSheet(); telaVocab(); toast(existing?"Atualizado":"Cadastrado"); if(then)then(o);
+  })];
+  if(existing) foot.unshift(btn("Excluir","dng",()=>confirmDel("Excluir \""+a.nome+"\"?","Os registros continuam no diário.", async()=>{
+    await del("produtos",a.id); S.produtos = S.produtos.filter(x=>x.id!==a.id); closeSheet(); telaVocab(); toast("Excluído");
+  })));
+  openSheet(existing?"Editar produto":"Novo produto", w, foot);
+}
+
+function formParametro(existing, then){
+  const a = existing||{};
+  const eb = errBox(), w = el("div"); w.appendChild(eb);
+  const fNome = input("text", a.nome||"", "ex: Cloro livre");
+  const fUni  = input("text", a.unidade||"", "ex: ppm — pode deixar vazio");
+  const fMin  = input("number", a.min!=null?a.min:"", "mínimo bom"); fMin.step="any";
+  const fMax  = input("number", a.max!=null?a.max:"", "máximo bom"); fMax.step="any";
+  const fApel = campoApelidos(a);
+  w.appendChild(field("Nome", fNome));
+  w.appendChild(field("Unidade", fUni));
+  const t = el("div","two"); t.appendChild(field("Mínimo",fMin)); t.appendChild(field("Máximo",fMax)); w.appendChild(t);
+  w.appendChild(el("div","hint","É essa faixa que faz o app avisar na hora, ainda com o kit na mão."));
+  w.appendChild(field("Como você fala", fApel));
+  const foot = [btn("Cancelar","sec",closeSheet), btn("Salvar","pri", async()=>{
+    if(!fNome.value.trim()) return showErr(eb,"Dê um nome.");
+    const mn = num(fMin.value), mx = num(fMax.value);
+    if(mn!=null && mx!=null && mn>mx) return showErr(eb,"O mínimo está maior que o máximo.");
+    const o = {id:a.id||("par-"+slug(fNome.value)), nome:fNome.value.trim(), unidade:fUni.value.trim(),
+               min:mn, max:mx, apelidos:listaApelidos(fApel), criadoEm:a.criadoEm||new Date().toISOString()};
+    await put("parametros",o);
+    const ix = S.parametros.findIndex(x=>x.id===o.id); if(ix>=0)S.parametros[ix]=o; else S.parametros.push(o);
+    closeSheet(); render(); toast(existing?"Atualizado":"Cadastrado"); if(then)then(o);
+  })];
+  if(existing) foot.unshift(btn("Excluir","dng",()=>confirmDel("Excluir \""+a.nome+"\"?","As leituras continuam no diário.", async()=>{
+    await del("parametros",a.id); S.parametros = S.parametros.filter(x=>x.id!==a.id); closeSheet(); telaVocab(); toast("Excluído");
+  })));
+  openSheet(existing?"Editar medição":"Nova medição", w, foot);
+}
+
+function formAtencao(existing, then){
+  const a = existing||{};
+  const eb = errBox(), w = el("div"); w.appendChild(eb);
+  const fNome = input("text", a.nome||"", "ex: ruído");
+  const fLugar = selectEl(opcoes(S.lugares), a.lugarId||"", "— em qualquer lugar —");
+  const fApel = campoApelidos(a);
+  w.appendChild(field("Palavra", fNome));
+  w.appendChild(field("Só vale neste lugar", fLugar, "“Verde” na piscina é problema; nas plantas é notícia boa."));
+  w.appendChild(field("Outras formas", fApel));
+  const foot = [btn("Cancelar","sec",closeSheet), btn("Salvar","pri", async()=>{
+    if(!fNome.value.trim()) return showErr(eb,"Escreva a palavra.");
+    const o = {id:a.id||("atn-"+slug(fNome.value)), nome:fNome.value.trim(), lugarId:fLugar.value||null,
+               apelidos:listaApelidos(fApel), criadoEm:a.criadoEm||new Date().toISOString()};
+    await put("atencao",o);
+    const ix = S.atencao.findIndex(x=>x.id===o.id); if(ix>=0)S.atencao[ix]=o; else S.atencao.push(o);
+    closeSheet(); telaVocab(); toast(existing?"Atualizado":"Cadastrado"); if(then)then(o);
+  })];
+  if(existing) foot.unshift(btn("Excluir","dng",()=>confirmDel("Excluir \""+a.nome+"\"?","", async()=>{
+    await del("atencao",a.id); S.atencao = S.atencao.filter(x=>x.id!==a.id); closeSheet(); telaVocab(); toast("Excluído");
+  })));
+  openSheet(existing?"Editar palavra":"Nova palavra de atenção", w, foot);
+}
+
+/* ============ tela de confirmação ============ */
+function telaConfirmar(texto, drafts, g){
+  const w = el("div");
+  const eb = errBox(); w.appendChild(eb);
+  w.appendChild(el("div","fala-orig", "“" + esc(texto) + "”"));
+
+  const toksFala = tokenizar(texto).toks;
+  const lista = el("div"); w.appendChild(lista);
+  const voltar = () => telaConfirmar(texto, drafts, g);
+
+  function editar(ix){
+    const d = drafts[ix];
+    const pre = Object.assign({}, d, {
+      aoSalvar: r => { drafts[ix] = Object.assign({}, r); voltar(); },
+      aoCancelar: voltar
+    });
+    if(d.tipo === "servico") formServico(pre);
+    else if(d.tipo === "medicao") formMedicao(pre);
+    else formObs(pre);
+  }
+
+  const cartoes = [];
+
+  /* Um toque e a palavra que ele ouviu errado vira apelido do item certo.
+     É isso que faz o app melhorar sozinho, sem eu adivinhar como ele erra. */
+  function ensinarBotao(store, item){
+    const mj = melhorJanela(toksFala, item);
+    if(!mj || mj.s >= 0.72 || mj.s < 0.3) return null;
+    /* tira o "a"/"o"/"na" da frente: o apelido útil é a palavra, não o artigo */
+    let palavra = mj.janela.replace(/^(a|o|as|os|na|no|nas|nos|da|do|de|em|um|uma)\s+/, "");
+    if(palavra.length < 3) palavra = mj.janela;
+    const b = el("button","ensinar");
+    b.innerHTML = "Ensinar: “" + esc(palavra) + "” é " + esc(item.nome);
+    b.onclick = async () => {
+      item.apelidos = [...new Set((item.apelidos||[]).concat(palavra))];
+      await put(store, item);
+      toast("Aprendido. Da próxima vez ele entende “" + palavra + "”.");
+      b.remove();
+    };
+    return b;
+  }
+
+  function blocoEscolha(titulo, itens, aoEscolher){
+    const bloco = el("div","escolha");
+    bloco.appendChild(el("div","sec-t", titulo));
+    const chips = el("div","chips");
+    itens.forEach(it => {
+      const ch = el("button","chip", esc(it.nome));
+      ch.onclick = () => aoEscolher(it);
+      chips.appendChild(ch);
+    });
+    bloco.appendChild(chips);
+    return bloco;
+  }
+
+  function desenhar(){
+    lista.innerHTML = ""; cartoes.length = 0;
+    drafts.forEach((d, ix) => {
+      const c = el("div","card"); c.style.marginBottom = "12px";
+      cartoes[ix] = c;
+      const b = el("button","row");
+      b.appendChild(el("div","dot d-" + d.tipo));
+      const bd = el("div","bd");
+      const lu = d.lugarId ? lugarById(d.lugarId) : null;
+      bd.appendChild(el("div","t1", (d.atencao?'<span class="flag">&#9888; </span>':"") +
+                                     esc(TIPO_LB[d.tipo]) + (lu ? " · " + esc(lu.nome) : "")));
+      const desc = descRegistro(d);
+      if(desc) bd.appendChild(el("div","t2", esc(desc)));
+      const faltas = [];
+      if(!d.lugarId) faltas.push("não entendi o lugar");
+      if(d.tipo === "medicao" && d.valor == null) faltas.push("falta o valor");
+      if(faltas.length) bd.appendChild(el("div","t2 falta", esc(faltas.join(" · "))));
+      b.appendChild(bd);
+      b.appendChild(el("div","rt","editar"));
+      b.onclick = () => editar(ix);
+      c.appendChild(b);
+
+      /* aviso de faixa, ainda com o kit na mão */
+      if(d.tipo === "medicao"){
+        const p = paramById(d.parametroId);
+        const av = p ? avisoFaixa(p, d.valor) : null;
+        if(av){
+          const box = el("div","aviso bad"); box.style.margin = "0 14px 14px";
+          box.innerHTML = "&#9888; " + esc(av);
+          c.appendChild(box);
+        }
+      }
+
+      if(!d.lugarId){
+        c.appendChild(blocoEscolha("Toque no lugar certo", S.lugares, lu2 => {
+          drafts.forEach(x => { if(!x.lugarId) x.lugarId = lu2.id; });
+          d._ensinarLugar = lu2;
+          desenhar();
+        }));
+      } else if(d._ensinarLugar){
+        const bt = ensinarBotao("lugares", d._ensinarLugar);
+        if(bt){ const w2 = el("div"); w2.style.padding = "0 14px 12px"; w2.appendChild(bt); c.appendChild(w2); }
+      }
+
+      if(d._ensinarCoisa){
+        const bt = ensinarBotao("coisas", d._ensinarCoisa);
+        if(bt){ const w2 = el("div"); w2.style.padding = "0 14px 12px"; w2.appendChild(bt); c.appendChild(w2); }
+      }
+
+      if(drafts.length > 1){
+        const acts = el("div","grav-acts"); acts.style.padding = "10px 14px 14px";
+        const rm = el("button","mini d"); rm.textContent = "Remover";
+        rm.onclick = () => { drafts.splice(ix,1); desenhar(); };
+        acts.appendChild(rm); c.appendChild(acts);
+      }
+      lista.appendChild(c);
+    });
+
+    if(!drafts.length) lista.appendChild(el("div","empty","Nada pra salvar."));
+  }
+  desenhar();
+
+  const cobrar = (ix, msg) => {
+    showErr(eb, msg);
+    const c = cartoes[ix];
+    if(c){ c.classList.add("pisca"); c.scrollIntoView({block:"center", behavior:"smooth"}); setTimeout(()=>c.classList.remove("pisca"), 2200); }
+  };
+
+  const salvar = async () => {
+    for(let ix = 0; ix < drafts.length; ix++){
+      const d = drafts[ix];
+      if(!d.lugarId) return cobrar(ix, "Falta o lugar — toque num dos botões laranjas.");
+      if(d.tipo === "medicao" && d.valor == null) return cobrar(ix, "Falta o valor — toque em “editar”.");
+    }
+    if(g){
+      g.status = "processada";
+      g.lugarId = (drafts[0] && drafts[0].lugarId) || null;
+      await put("gravacoes", g);
+    }
+    const avisos = [];
+    for(const d of drafts){
+      const r = Object.assign({}, d);
+      Object.keys(r).forEach(k => { if(k[0] === "_") delete r[k]; });
+      r.id = uid(); r.gravacaoId = g ? g.id : null; r.fala = texto;
+      r.resolvido = false; r.criadoEm = new Date().toISOString();
+      if(r.tipo === "medicao"){
+        const p = paramById(r.parametroId);
+        const av = p ? avisoFaixa(p, r.valor) : null;
+        r.atencao = !!av;
+        if(av) avisos.push(av);
+      }
+      await put("registros", r); S.registros.push(r);
+      if(r.lugarId) await saveCfg({ultimoLugar:r.lugarId});
+    }
+    closeSheet(); render();
+    toast(avisos.length ? avisos.join(" ")
+         : (drafts.length === 1 ? "Registrado" : drafts.length + " registros salvos"));
+  };
+
+  const descartar = () => confirmDel("Descartar o que você falou?",
+    g ? "O áudio continua guardado em Gravações, mas nada entra no diário." : "Nada será salvo no diário.",
+    async () => { closeSheet(); render(); toast("Descartado"); });
+
+  openSheet("Confira o que entendi", w, [btn("Descartar tudo","sec",descartar), btn("Salvar","pri",salvar)]);
+}
+
+/* ============ navegação ============ */
+let tab = "home", stack = null;
+function go(t){ tab = t; stack = null; render(); window.scrollTo(0,0); }
+$("#backBtn").onclick = ()=>{ stack = null; render(); };
+document.querySelectorAll("nav button").forEach(b => b.onclick = ()=>{
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x===b));
+  go(b.dataset.tab);
+});
+function marcarNav(t){ document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x.dataset.tab===t)); }
+function head(t,s){ $("#hdTitle").childNodes[0].nodeValue = t; $("#hdSub").textContent = s||""; }
+
+function render(){
+  const v = $("#view"); v.innerHTML = "";
+  $("#backBtn").classList.toggle("hide", !stack);
+  if(stack && stack.tipo === "lugar") return screenLugar(stack.id);
+  if(stack && stack.tipo === "vocab") return telaVocab();
+  if(stack && stack.tipo === "gravacoes") return screenGravacoes();
+  if(tab === "home") return screenHome();
+  if(tab === "diario") return screenDiario();
+  if(tab === "agua") return screenAgua();
+  if(tab === "mais") return screenMais();
+}
+
+/* ============ INÍCIO ============ */
+function screenHome(){
+  head("Caderno da Piscina", new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"}));
+  const v = $("#view");
+  const gravando = !!sess;
+  const st = statusGeral();
+
+  const h = el("div","home");
+  h.innerHTML = gotaSVG(st.nivel);
+  h.appendChild(el("div","st-t "+st.nivel, esc(st.t)));
+  h.appendChild(el("div","st-s", esc(st.s)));
+
+  const mw = el("div","micwrap");
+  const m = el("button","mic"+(gravando?" rec":""));
+  m.innerHTML = gravando
+    ? '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2.5" width="6" height="11" rx="3" fill="currentColor" stroke="none"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3.5"/></svg>';
+  m.onclick = toggleFala;
+  mw.appendChild(m);
+  const lb = el("div","miclb");
+  if(gravando) lb.innerHTML = 'Ouvindo <span id="micTime" class="mictime">0:00</span> · toque para parar';
+  else lb.textContent = "Toque e fale o que você fez ou mediu";
+  mw.appendChild(lb);
+  if(gravando){
+    const fv = el("div","fala-viva"); fv.id = "falaViva";
+    fv.innerHTML = '<span class="par">Pode falar…</span>';
+    mw.appendChild(fv);
+  }
+  h.appendChild(mw);
+
+  const np = pendentes().length;
+  if(np){
+    const p = el("button","pend", np===1 ? "1 gravação esperando" : np+" gravações esperando");
+    p.onclick = ()=>{ stack = {tipo:"gravacoes"}; render(); window.scrollTo(0,0); };
+    h.appendChild(p);
+  }
+
+  const fb = el("button","photobtn","&#128247; Foto e observação");
+  fb.onclick = ()=>formObs();
+  h.appendChild(fb);
+
+  if(!micSuportado()){
+    const a = el("div","empty"); a.style.marginTop = "26px"; a.style.fontSize = "14px";
+    a.innerHTML = "<b>O microfone não está disponível aqui.</b><br>Isso acontece quando o app é aberto direto de um arquivo. Num endereço https funciona.";
+    h.appendChild(a);
+  } else if(!falaSuportada()){
+    const a = el("div","empty"); a.style.marginTop = "26px"; a.style.fontSize = "14px";
+    a.innerHTML = "<b>Este navegador não entende voz.</b><br>Use o Chrome. Por aqui o app só guarda o áudio do que você falar, sem transcrever.";
+    h.appendChild(a);
+  }
+  v.appendChild(h);
+
+  const ab = alertasAbertos();
+  if(ab.length){
+    const s = el("div","sec"); s.style.marginTop = "30px";
+    s.appendChild(el("div","sec-t","Pra olhar"));
+    const c = el("div","card");
+    ab.slice(0,6).forEach(r => c.appendChild(rowRegistro(r,true)));
+    s.appendChild(c); v.appendChild(s);
+  }
+}
+
+/* ============ ÁGUA ============ */
+function screenAgua(){
+  head("Água","últimas leituras");
+  const v = $("#view");
+
+  if(!S.parametros.length){
+    v.appendChild(el("div","empty","Nada cadastrado pra medir ainda."));
+  } else {
+    const c = el("div","card");
+    S.parametros.forEach(p => {
+      const u = ultimaLeitura(p.id);
+      const box = el("button","med");
+      const bd = el("div","bd");
+      bd.appendChild(el("div","nm", esc(p.nome)));
+      bd.appendChild(el("div","mt", u ? esc("faixa "+textoFaixa(p)+" · "+fmtAgo(u.data)) : esc("faixa "+textoFaixa(p)+" · sem leitura")));
+      if(u && p.min!=null && p.max!=null){
+        const larg = p.max - p.min;
+        const lo = p.min - larg*0.9, hi = p.max + larg*0.9;
+        const pct = x => Math.max(0, Math.min(100, (x - lo)/(hi - lo)*100));
+        const barra = el("div","barra");
+        const fx = el("div","faixa");
+        fx.style.left = pct(p.min)+"%"; fx.style.width = (pct(p.max)-pct(p.min))+"%";
+        barra.appendChild(fx);
+        const mk = el("div","marca"); mk.style.left = "calc("+pct(u.valor)+"% - 2px)";
+        const f = foraDaFaixa(p, u.valor);
+        mk.style.background = f ? "var(--red)" : "var(--agua)";
+        barra.appendChild(mk);
+        bd.appendChild(barra);
+      }
+      box.appendChild(bd);
+      if(u){
+        const f = foraDaFaixa(p, u.valor);
+        const vl = el("div","vl "+(f?"bad":"ok"), esc(fmtNum(u.valor)));
+        box.appendChild(vl);
+      } else {
+        box.appendChild(el("div","pill neutral","—"));
+      }
+      box.onclick = ()=>formParametro(p);
+      c.appendChild(box);
+    });
+    v.appendChild(c);
+  }
+
+  const b = btn("+ Registrar medição","pri",()=>formMedicao()); b.style.marginTop = "16px"; v.appendChild(b);
+
+  const meds = S.registros.filter(r=>r.tipo==="medicao").sort((a,b2)=>ordem(b2).localeCompare(ordem(a)));
+  const s = el("div","sec"); s.style.marginTop = "26px";
+  s.appendChild(el("div","sec-t","Histórico"));
+  if(!meds.length) s.appendChild(el("div","empty","Nenhuma medição registrada ainda.<br>Fale: “pH 7,4 e cloro 2”."));
+  else s.appendChild(grouped(meds.slice(0,80), true));
+  v.appendChild(s);
+
+  const nota = el("div","empty");
+  nota.style.cssText = "margin-top:6px;text-align:left;font-size:14px";
+  nota.innerHTML = "O gráfico das leituras ao longo do tempo vem na próxima etapa. "+
+                   "Dose de químico o app não calcula — mostra a faixa e deixa a conta com você.";
+  v.appendChild(nota);
+}
+
+/* ============ DIÁRIO ============ */
+let filtroTipo = null, filtroLugar = "", busca = "";
+function screenDiario(){
+  head("Diário","");
+  const v = $("#view"); v.innerHTML = "";
+  const f = el("div","sec");
+  const fb = input("text", busca, "Buscar no diário…"); fb.style.marginBottom = "12px";
+  fb.oninput = ()=>{ busca = fb.value; lista(); };
+  f.appendChild(fb);
+  const chips = el("div","chips"); chips.style.marginBottom = "12px";
+  ["servico","medicao","observacao"].forEach(t => {
+    const c = el("button","chip"+(filtroTipo===t?" on":""), esc(TIPO_LB[t]));
+    c.onclick = ()=>{ filtroTipo = filtroTipo===t?null:t; render(); };
+    chips.appendChild(c);
+  });
+  f.appendChild(chips);
+  if(S.lugares.length){
+    const sl = selectEl(opcoes(S.lugares), filtroLugar, "Todos os lugares");
+    sl.onchange = ()=>{ filtroLugar = sl.value; lista(); };
+    f.appendChild(sl);
+  }
+  v.appendChild(f);
+  const holder = el("div"); v.appendChild(holder);
+  function lista(){
+    holder.innerHTML = "";
+    const q = busca.trim().toLowerCase();
+    let L = sortedRegs();
+    if(filtroTipo) L = L.filter(r=>r.tipo===filtroTipo);
+    if(filtroLugar) L = L.filter(r=>r.lugarId===filtroLugar);
+    if(q) L = L.filter(r => {
+      const lu = r.lugarId ? lugarById(r.lugarId) : null;
+      return ((r.obs||"")+" "+descRegistro(r)+" "+(lu?lu.nome:"")+" "+TIPO_LB[r.tipo]+" "+(r.fala||"")).toLowerCase().includes(q);
+    });
+    if(!L.length){ holder.appendChild(el("div","empty", S.registros.length?"Nada encontrado com esses filtros.":"Seu diário está vazio.<br>Grave algo na tela inicial.")); return; }
+    holder.appendChild(grouped(L, true));
+  }
+  lista();
+}
+
+function rowRegistro(r, showLugar){
+  const lu = r.lugarId ? lugarById(r.lugarId) : null;
+  const b = el("button","row");
+  if(r.foto) b.appendChild(imgFrom(r.foto,"thumb"));
+  else b.appendChild(el("div","dot d-"+r.tipo));
+  const bd = el("div","bd");
+  const flag = (r.atencao && !r.resolvido) ? '<span class="flag">&#9888; </span>' : "";
+  bd.appendChild(el("div","t1", flag + esc(TIPO_LB[r.tipo]) + (showLugar && lu ? " · " + esc(lu.nome) : "")));
+  const d = descRegistro(r);
+  if(d) bd.appendChild(el("div","t2", esc(d)));
+  b.appendChild(bd);
+  b.appendChild(el("div","rt", esc(r.hora||"")));
+  b.onclick = ()=>verRegistro(r);
+  return b;
+}
+function grouped(list, showLugar){
+  const wrap = el("div"); let cur = null, card = null;
+  list.forEach(r => {
+    if(r.data !== cur){ cur = r.data; const g = el("div","daygrp");
+      g.appendChild(el("div","dayhd", esc(fmtDay(r.data)))); card = el("div","card"); g.appendChild(card); wrap.appendChild(g); }
+    card.appendChild(rowRegistro(r, showLugar));
+  });
+  return wrap;
+}
+
+function verRegistro(r){
+  const lu = r.lugarId ? lugarById(r.lugarId) : null;
+  const w = el("div"); const c = el("div","card"); c.style.padding = "4px 16px";
+  const kv = (k,val)=>{ if(val==null||val==="")return; const d = el("div","kv");
+    d.appendChild(el("span",null,esc(k))); d.appendChild(el("span",null,esc(val))); c.appendChild(d); };
+  kv("Tipo", TIPO_LB[r.tipo]); kv("Lugar", lu?lu.nome:"—"); kv("Data", fmtDay(r.data)); kv("Hora", r.hora);
+  if(r.tipo === "servico"){
+    kv("O que fez", r.verbo);
+    const co = r.coisaId ? coisaById(r.coisaId) : null; kv("Em que", co?co.nome:null);
+    const pd = r.produtoId ? produtoById(r.produtoId) : null; kv("Produto", pd?pd.nome:null);
+    kv("Quantidade", r.quantidade!=null ? fmtNum(r.quantidade)+" "+(r.unidade||"") : null);
+  }
+  if(r.tipo === "medicao"){
+    const p = paramById(r.parametroId);
+    kv("Medida", p?p.nome:null);
+    kv("Valor", fmtNum(r.valor)+(p&&p.unidade?" "+p.unidade:""));
+    if(p){ kv("Faixa boa", textoFaixa(p)); const f = foraDaFaixa(p,r.valor); kv("Situação", f?("está "+f):"dentro da faixa"); }
+  }
+  kv("Observação", r.obs);
+  if(r.atencao) kv("Atenção", r.resolvido ? "resolvido" : "em aberto");
+  if(r.fala) kv("Você falou", "“"+r.fala+"”");
+  w.appendChild(c);
+  if(r.foto) w.appendChild(imgFrom(r.foto,"photoprev"));
+  if(r.gravacaoId){
+    const g = S.gravacoes.find(x=>x.id===r.gravacaoId);
+    if(g && g.blob){
+      const box = el("div","grav"); box.style.cssText = "margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--r)";
+      const top = el("div","grav-top"); const pb = el("button","play","&#9654;"); pb.onclick = ()=>tocar(g,pb);
+      top.appendChild(pb); const bd = el("div","bd");
+      bd.appendChild(el("div","t1","Áudio original")); bd.appendChild(el("div","t2", fmtDur(g.dur)));
+      top.appendChild(bd); box.appendChild(top); w.appendChild(box);
+    }
+  }
+
+  const foot = [];
+  if(r.atencao){
+    foot.push(btn(r.resolvido ? "Reabrir" : "Marcar resolvido", "sec", async()=>{
+      r.resolvido = !r.resolvido; await put("registros", r); closeSheet(); render();
+      toast(r.resolvido ? "Marcado como resolvido" : "Reaberto");
+    }));
+  } else foot.push(btn("Fechar","sec",closeSheet));
+  foot.push(btn("Excluir","dng",()=>confirmDel("Excluir este registro?","Não dá pra desfazer.", async()=>{
+    await del("registros", r.id); S.registros = S.registros.filter(x=>x.id!==r.id); closeSheet(); render(); toast("Registro excluído");
+  })));
+  openSheet(TIPO_LB[r.tipo], w, foot);
+}
+
+/* ============ LUGAR ============ */
+function screenLugar(id){
+  const a = lugarById(id); if(!a){ stack = null; return render(); }
+  head(a.nome, "");
+  const v = $("#view");
+  const hd = el("div","card"); hd.style.cssText = "padding:4px 16px;margin-bottom:18px";
+  const kv = (k,val)=>{ if(val==null||val==="") return; const d = el("div","kv");
+    d.appendChild(el("span",null,esc(k))); d.appendChild(el("span",null,esc(val))); hd.appendChild(d); };
+  const rs = S.registros.filter(r=>r.lugarId===a.id).sort((x,y)=>ordem(y).localeCompare(ordem(x)));
+  kv("Registros", rs.length);
+  kv("Último", rs.length ? fmtAgo(rs[0].data) : "nenhum");
+  if(a.volume) kv("Volume", fmtNum(a.volume)+" L");
+  if(a.apelidos && a.apelidos.length) kv("Como você fala", a.apelidos.join(", "));
+  if(a.obs) kv("Observação", a.obs);
+  v.appendChild(hd);
+
+  const abertos = rs.filter(r=>r.atencao && !r.resolvido);
+  if(abertos.length){
+    const s = el("div","sec"); s.appendChild(el("div","sec-t","Pra olhar"));
+    const c = el("div","card"); abertos.forEach(r=>c.appendChild(rowRegistro(r,false)));
+    s.appendChild(c); v.appendChild(s);
+  }
+
+  const s = el("div","sec"); s.appendChild(el("div","sec-t","Histórico deste lugar"));
+  if(rs.length) s.appendChild(grouped(rs, false)); else s.appendChild(el("div","empty","Nenhum registro aqui ainda."));
+  v.appendChild(s);
+  const eb = btn("Editar lugar","sec",()=>formLugar(a)); eb.style.flex = "1"; v.appendChild(eb);
+}
+
+/* ============ GRAVAÇÕES ============ */
+function screenGravacoes(){
+  head("Gravações","");
+  const v = $("#view");
+  const list = pendentes();
+  const info = el("div","empty");
+  info.style.cssText = "text-align:left;font-size:14px;margin-bottom:18px";
+  info.innerHTML = "<b>Estas o app não conseguiu entender</b> — normalmente por falta de sinal na hora da fala. O jeito mais rápido de resolver é ouvir e falar de novo.";
+  v.appendChild(info);
+
+  if(!list.length) v.appendChild(el("div","empty","Nenhuma gravação esperando."));
+  else{
+    const c = el("div","card");
+    list.forEach(g => {
+      const box = el("div","grav");
+      const top = el("div","grav-top");
+      const pb = el("button","play","&#9654;"); pb.onclick = ()=>tocar(g,pb);
+      top.appendChild(pb);
+      const bd = el("div","bd");
+      bd.appendChild(el("div","t1", fmtDay(g.data)+" · "+g.hora));
+      bd.appendChild(el("div","t2", fmtDur(g.dur)+" · "+Math.round((g.blob?g.blob.size:0)/1024)+" KB"));
+      top.appendChild(bd); box.appendChild(top);
+      const acts = el("div","grav-acts");
+      const rf = el("button","mini","Falar de novo");
+      rf.onclick = ()=>{ stack = null; go("home"); marcarNav("home"); setTimeout(toggleFala,250); };
+      acts.appendChild(rf);
+      const pr = el("button","mini","Preencher no dedo");
+      pr.onclick = ()=>escolherTipo({gravacaoId:g.id, data:g.data, hora:g.hora});
+      const rm = el("button","mini d","Apagar");
+      rm.onclick = ()=>confirmDel("Apagar esta gravação?","O áudio será perdido.", async()=>{
+        await del("gravacoes",g.id); S.gravacoes = S.gravacoes.filter(x=>x.id!==g.id); closeSheet(); render(); toast("Gravação apagada");
+      });
+      acts.appendChild(pr); acts.appendChild(rm);
+      box.appendChild(acts);
+      c.appendChild(box);
+    });
+    v.appendChild(c);
+  }
+}
+
+function escolherTipo(pre){
+  const w = el("div"); const c = el("div","card");
+  const it = (ic,lb,fn)=>{ const b = el("button","menu-item"); b.appendChild(el("span","ic",ic));
+    const t = el("span",null,esc(lb)); t.style.flex = "1"; b.appendChild(t); b.onclick = fn; return b; };
+  c.appendChild(it("&#129529;","Serviço",()=>formServico(pre)));
+  c.appendChild(it("&#129514;","Medição",()=>formMedicao(pre)));
+  c.appendChild(it("&#128221;","Observação",()=>formObs(pre)));
+  w.appendChild(c);
+  openSheet("O que foi isso?", w, [btn("Cancelar","sec",closeSheet)]);
+}
+
+/* ============ VOCABULÁRIO ============ */
+let vocabAba = "lugares";
+const ABAS = [
+  {k:"lugares",    lb:"Lugares"},
+  {k:"verbos",     lb:"Verbos"},
+  {k:"coisas",     lb:"Coisas"},
+  {k:"produtos",   lb:"Produtos"},
+  {k:"parametros", lb:"Medições"},
+  {k:"atencao",    lb:"Atenção"}
+];
+function telaVocab(){
+  stack = {tipo:"vocab"};
+  head("Vocabulário","o app entende o que estiver aqui");
+  const v = $("#view"); v.innerHTML = "";
+  $("#backBtn").classList.remove("hide");
+
+  const abas = el("div","abas");
+  ABAS.forEach(a => {
+    const c = el("button","chip"+(vocabAba===a.k?" on":""), esc(a.lb)+" "+S[a.k].length);
+    c.onclick = ()=>{ vocabAba = a.k; telaVocab(); };
+    abas.appendChild(c);
+  });
+  v.appendChild(abas);
+
+  const lista = S[vocabAba].slice().sort((a,b)=>semAcento(a.nome).localeCompare(semAcento(b.nome)));
+  const abrir = {lugares:formLugar, verbos:formVerbo, coisas:formCoisa,
+                 produtos:formProduto, parametros:formParametro, atencao:formAtencao}[vocabAba];
+
+  if(!lista.length) v.appendChild(el("div","empty","Nada aqui ainda."));
+  else{
+    const c = el("div","card");
+    lista.forEach(i => {
+      const b = el("button","acard");
+      const bd = el("div","bd");
+      bd.appendChild(el("div","nm", esc(i.nome)));
+      let sub = "";
+      if(vocabAba === "lugares") sub = [i.volume?fmtNum(i.volume)+" L":null, (i.apelidos||[]).length+" formas de falar"].filter(Boolean).join(" · ");
+      else if(vocabAba === "parametros") sub = "faixa "+textoFaixa(i);
+      else if(vocabAba === "produtos") sub = i.unidade ? "em "+i.unidade : "sem unidade";
+      else if(vocabAba === "coisas" || vocabAba === "verbos" || vocabAba === "atencao"){
+        const lu = i.lugarId ? lugarById(i.lugarId) : null;
+        sub = lu ? lu.nome : (vocabAba==="verbos" ? "depende do que for citado" : "qualquer lugar");
+      }
+      const ap = (i.apelidos||[]).slice(0,4).join(", ");
+      bd.appendChild(el("div","mt", esc(sub + (ap ? " · " + ap : ""))));
+      b.appendChild(bd);
+      b.appendChild(el("div","pill neutral", String((i.apelidos||[]).length)));
+      b.onclick = ()=>abrir(i);
+      c.appendChild(b);
+    });
+    v.appendChild(c);
+  }
+
+  const nv = btn("+ Adicionar", "pri", ()=>abrir()); nv.style.marginTop = "16px"; v.appendChild(nv);
+
+  const nota = el("div","empty");
+  nota.style.cssText = "margin-top:18px;text-align:left;font-size:14px";
+  nota.innerHTML = "Tudo aqui é seu pra mexer. Quando o app errar uma palavra, ele oferece um botão "+
+                   "<b>Ensinar</b> na tela de confirmação — dá no mesmo que adicionar aqui, só que num toque.";
+  v.appendChild(nota);
+}
+
+/* ============ MAIS ============ */
+function screenMais(){
+  head("Mais","");
+  const v = $("#view");
+  const item = (ic,lb,ch,fn)=>{ const b = el("button","menu-item"); b.appendChild(el("span","ic",ic));
+    const t = el("span",null,esc(lb)); t.style.flex = "1"; b.appendChild(t);
+    b.appendChild(el("span","ch", esc(ch||""))); b.onclick = fn; return b; };
+
+  const c = el("div","card");
+  c.appendChild(item("&#128218;","Vocabulário","o que o app entende", ()=>{ telaVocab(); window.scrollTo(0,0); }));
+  c.appendChild(item("&#128205;","Lugares", String(S.lugares.length), ()=>{ vocabAba="lugares"; telaVocab(); window.scrollTo(0,0); }));
+  v.appendChild(c);
+
+  const c2 = el("div","card"); c2.style.marginTop = "18px";
+  c2.appendChild(item("&#9997;","Registrar sem falar","", ()=>escolherTipo({})));
+  c2.appendChild(item("&#127908;","Gravações", pendentes().length? pendentes().length+" esperando" : "nenhuma", ()=>{ stack={tipo:"gravacoes"}; render(); window.scrollTo(0,0); }));
+  v.appendChild(c2);
+
+  const c3 = el("div","card"); c3.style.marginTop = "18px";
+  c3.appendChild(item("&#9203;","De quantos em quantos dias medir", (S.config.freqMedicao==null?2:S.config.freqMedicao)+" dias", perguntarFreq));
+  v.appendChild(c3);
+
+  const c4 = el("div","card"); c4.style.marginTop = "18px";
+  c4.appendChild(item("&#128190;","Exportar backup","", exportar));
+  c4.appendChild(item("&#128228;","Importar backup","", importar));
+  c4.appendChild(item("&#128221;","Recarregar meu vocabulário","repõe o que veio de fábrica", async()=>{
+    const r = await instalarVocabulario(); render();
+    toast(r.novos||r.completados ? "Repus "+r.novos+" item(ns)"+(r.completados?" e completei "+r.completados:"") : "Já estava tudo lá");
+  }));
+  c4.appendChild(item("&#128465;","Apagar tudo","", apagarTudo));
+  v.appendChild(c4);
+
+  const info = el("div","empty");
+  info.style.cssText = "margin-top:18px;text-align:left;font-size:14px";
+  const mb = (S.gravacoes.reduce((s,g)=>s+(g.blob?g.blob.size:0),0) + S.registros.reduce((s,r)=>s+(r.foto?r.foto.size:0),0))/1048576;
+  info.innerHTML = "<b>Etapa 1.</b> Tudo fica dentro deste aparelho e funciona sem internet. "+
+    "Sincronia entre aparelhos, rota do dia e o gráfico das leituras vêm nas próximas etapas.<br><br>"+
+    "Áudios e fotos ocupam <b>"+mb.toFixed(1)+" MB</b>.<br><br>"+
+    "<b>Faça backup de vez em quando.</b> Enquanto a nuvem não existe, o arquivo de backup é a sua única cópia — "+
+    "ele leva o vocabulário e os registros, mas não leva áudios nem fotos.";
+  v.appendChild(info);
+}
+
+function perguntarFreq(){
+  const w = el("div");
+  const f = input("number", S.config.freqMedicao==null?2:S.config.freqMedicao, "dias");
+  w.appendChild(field("Medir de quantos em quantos dias?", f, "A gota da tela inicial fica amarela quando passa disso. Zero desliga o aviso."));
+  openSheet("Lembrete de medição", w, [btn("Cancelar","sec",closeSheet), btn("Salvar","pri", async()=>{
+    await saveCfg({freqMedicao: num(f.value)==null?0:num(f.value)});
+    closeSheet(); render(); toast("Salvo");
+  })]);
+}
+
+/* ============ backup ============ */
+function semBlobs(r){ const o = Object.assign({},r); delete o.foto; return o; }
+function exportar(){
+  const data = {app:"caderno-piscina", versao:1, exportadoEm:new Date().toISOString(),
+    lugares:S.lugares, coisas:S.coisas, produtos:S.produtos, parametros:S.parametros,
+    verbos:S.verbos, atencao:S.atencao, registros:S.registros.map(semBlobs), config:S.config};
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const url = URL.createObjectURL(blob); const a = document.createElement("a");
+  a.href = url; a.download = "caderno-piscina-"+todayISO()+".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+  toast("Backup gerado (sem áudios e fotos)");
+}
+function importar(){
+  const f = document.createElement("input"); f.type = "file"; f.accept = ".json,application/json";
+  f.onchange = async()=>{
+    const file = f.files[0]; if(!file) return;
+    try{
+      const d = JSON.parse(await file.text());
+      if(!d || !Array.isArray(d.registros)) throw new Error("formato");
+      for(const s of ["lugares","coisas","produtos","parametros","verbos","atencao","registros"]){
+        await clearStore(s); for(const o of (d[s]||[])) await put(s,o);
+      }
+      if(d.config) await put("config", Object.assign({id:"app"}, d.config));
+      await load(); render(); toast("Backup restaurado");
+    }catch(e){ toast("Arquivo inválido"); }
+  };
+  f.click();
+}
+function apagarTudo(){
+  confirmDel("Apagar tudo?","Registros, vocabulário, áudios e fotos deste aparelho serão apagados. Exporte um backup antes se quiser guardar.", async()=>{
+    for(const s of STORES) await clearStore(s);
+    await load(); await instalarVocabulario(); await saveCfg({vocab:VOCAB_VERSAO});
+    await load(); closeSheet(); go("home"); marcarNav("home"); toast("Tudo apagado — vocabulário reposto");
+  });
+}
+
+/* ============ boot ============ */
+(async function(){
+  try{
+    await openDB(); await load();
+    if(S.config.vocab !== VOCAB_VERSAO){
+      await instalarVocabulario();
+      await saveCfg({vocab: VOCAB_VERSAO});
+      await load();
+    }
+    render();
+  }
+  catch(e){
+    $("#view").innerHTML = '<div class="empty"><b>Não consegui abrir o banco de dados.</b><br>Se você estiver numa aba anônima, tente numa aba normal.</div>';
+    console.error(e);
+  }
+})();
+
+window.__app = {S, load, render, statusGeral, interpretar, telaConfirmar, tokenizar,
+                normalizarFala, instalarVocabulario, acharMedicoes, foraDaFaixa, slug};
+
+if("serviceWorker" in navigator && location.protocol === "https:"){
+  window.addEventListener("load", ()=>{ navigator.serviceWorker.register("sw.js").catch(e=>console.warn("sw",e)); });
+}
+</script>
+</body>
+</html>
