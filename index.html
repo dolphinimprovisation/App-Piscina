@@ -250,8 +250,8 @@ function num(v){ if(v===""||v==null) return null; const n=parseFloat(String(v).r
 function fmtNum(n){ return String(n).replace(".",","); }
 
 /* ============ banco ============ */
-const DB_NAME="caderno-piscina", DB_VER=1;
-const STORES=["lugares","coisas","produtos","parametros","verbos","atencao","registros","gravacoes","config"];
+const DB_NAME="caderno-piscina", DB_VER=2;
+const STORES=["lugares","coisas","produtos","parametros","verbos","atencao","registros","gravacoes","pendentes","config"];
 let _db=null;
 function openDB(){
   return new Promise((ok,err)=>{
@@ -262,17 +262,34 @@ function openDB(){
   });
 }
 function tx(store,mode){ return _db.transaction(store,mode).objectStore(store); }
-function put(store,obj){ return new Promise((ok,err)=>{ const r=tx(store,"readwrite").put(obj); r.onsuccess=()=>ok(obj); r.onerror=e=>err(e.target.error); }); }
-function del(store,id){ return new Promise((ok,err)=>{ const r=tx(store,"readwrite").delete(id); r.onsuccess=()=>ok(); r.onerror=e=>err(e.target.error); }); }
+function putBruto(store,obj){ return new Promise((ok,err)=>{ const r=tx(store,"readwrite").put(obj); r.onsuccess=()=>ok(obj); r.onerror=e=>err(e.target.error); }); }
+function delBruto(store,id){ return new Promise((ok,err)=>{ const r=tx(store,"readwrite").delete(id); r.onsuccess=()=>ok(); r.onerror=e=>err(e.target.error); }); }
+
+/* Toda gravação passa por aqui. O resto do app não precisa saber que existe
+   sincronia: grava normal, e a fila de pendências se enche sozinha. */
+async function put(store,obj){
+  if(TIPO_DA_LOJA[store]){
+    obj.atualizadoEm = new Date().toISOString();
+    await putBruto(store,obj);
+    await marcarPendente(store, obj.id, false, obj.atualizadoEm);
+    return obj;
+  }
+  return putBruto(store,obj);
+}
+async function del(store,id){
+  await delBruto(store,id);
+  /* apagar vira lápide: sem isso, o que você apaga aqui ressuscita vindo do outro aparelho */
+  if(TIPO_DA_LOJA[store]) await marcarPendente(store, id, true, new Date().toISOString());
+}
 function all(store){ return new Promise((ok,err)=>{ const r=tx(store,"readonly").getAll(); r.onsuccess=()=>ok(r.result||[]); r.onerror=e=>err(e.target.error); }); }
 function clearStore(store){ return new Promise((ok,err)=>{ const r=tx(store,"readwrite").clear(); r.onsuccess=()=>ok(); r.onerror=e=>err(e.target.error); }); }
 
 /* ============ estado ============ */
-const S = { lugares:[], coisas:[], produtos:[], parametros:[], verbos:[], atencao:[], registros:[], gravacoes:[], config:{} };
+const S = { lugares:[], coisas:[], produtos:[], parametros:[], verbos:[], atencao:[], registros:[], gravacoes:[], pendentes:[], config:{} };
 async function load(){
-  const [lu,co,pr,pa,ve,at,re,gr,cf] = await Promise.all(STORES.map(all));
+  const [lu,co,pr,pa,ve,at,re,gr,pe,cf] = await Promise.all(STORES.map(all));
   S.lugares=lu; S.coisas=co; S.produtos=pr; S.parametros=pa; S.verbos=ve; S.atencao=at;
-  S.registros=re; S.gravacoes=gr;
+  S.registros=re; S.gravacoes=gr; S.pendentes=pe;
   S.config = (cf.find(x=>x.id==="app")||{id:"app"});
   /* o banco devolve por ordem de identificador (alfabética). Pra Piscina e pH
      aparecerem primeiro, cada item guarda a ordem em que foi cadastrado. */
@@ -420,9 +437,9 @@ function chipGroup(options,val){
 }
 function errBox(){ return el("div","err hide"); }
 function showErr(b,m){ b.textContent=m; b.classList.remove("hide"); b.scrollIntoView({block:"nearest"}); }
-function confirmDel(title,msg,fn){
+function confirmDel(title,msg,fn,label,cls){
   const w=el("div"); w.appendChild(el("p",null,esc(msg)));
-  openSheet(title,w,[btn("Cancelar","sec",closeSheet),btn("Excluir","dng",fn)]);
+  openSheet(title,w,[btn("Cancelar","sec",closeSheet),btn(label||"Excluir",cls||"dng",fn)]);
 }
 async function saveCfg(patch){ S.config=Object.assign({id:"app"},S.config,patch); await put("config",S.config); }
 
@@ -762,8 +779,12 @@ async function instalarVocabulario(){
         if(ja.apelidos.length !== antes || ordAntes !== ja.ord){ await put(store, ja); completados++; }
         continue;
       }
-      const o = monta(v); o.ord = k;
-      await put(store, o); S[store].push(o); novos++;
+      /* O que vem de fábrica nasce com data antiga de propósito. Assim, se este
+         aparelho entrar num caderno que já existe, a versão que o Rob editou no
+         outro aparelho é mais nova e ganha — o padrão nunca atropela o editado. */
+      const o = monta(v); o.ord = k; o.atualizadoEm = SEMENTE_EM;
+      await putBruto(store, o); S[store].push(o); novos++;
+      if(S.config.caderno) await marcarPendente(store, o.id, false, SEMENTE_EM);
     }
   }
 
@@ -1698,6 +1719,276 @@ function telaConfirmar(texto, drafts, g){
   openSheet("Confira o que entendi", w, [btn("Descartar tudo","sec",descartar), btn("Salvar","pri",salvar)]);
 }
 
+/* ============ sincronia ============ */
+/* Sem login e sem senha: quem tem o código do caderno enxerga aquele caderno.
+   Foi escolha do Rob — senha no meio do serviço, com a mão molhada, é atrito. */
+
+const SYNC_URL_PADRAO = "https://tmzirofxoghzfkrsvbit.supabase.co/functions/v1/sync-piscina";
+const syncUrl = () => window.__syncUrl || S.config.syncUrl || SYNC_URL_PADRAO;
+
+/* data antiga de propósito: ver o comentário em instalarVocabulario */
+const SEMENTE_EM = "2020-01-01T00:00:00.000Z";
+
+/* o que viaja pra nuvem. Gravações (áudio) e config ficam de fora. */
+const TIPO_DA_LOJA = {lugares:"lugar", coisas:"coisa", produtos:"produto",
+                      parametros:"parametro", verbos:"verbo", atencao:"atencao",
+                      registros:"registro"};
+const LOJA_DO_TIPO = {lugar:"lugares", coisa:"coisas", produto:"produtos",
+                      parametro:"parametros", verbo:"verbos", atencao:"atencao",
+                      registro:"registros"};
+
+async function marcarPendente(loja, id, apagado, quando){
+  const tipo = TIPO_DA_LOJA[loja]; if(!tipo) return;
+  const p = {id: loja + ":" + id, loja, oid: id, tipo, apagado: !!apagado, atualizadoEm: quando};
+  await putBruto("pendentes", p);
+  /* a lista viva também precisa saber. Sem isto, a sincronia lê o array antigo,
+     não vê nada de novo, e o registro salvo nunca sobe. */
+  const ix = S.pendentes.findIndex(x => x.id === p.id);
+  if(ix >= 0) S.pendentes[ix] = p; else S.pendentes.push(p);
+  agendarSync();
+}
+
+function novoCaderno(){
+  const a = "abcdefghijklmnopqrstuvwxyz0123456789";
+  const buf = new Uint8Array(24);
+  if(window.crypto && crypto.getRandomValues) crypto.getRandomValues(buf);
+  else for(let i=0;i<buf.length;i++) buf[i] = Math.floor(Math.random()*256);
+  let x = "";
+  for(const b of buf) x += a[b % a.length];
+  return x;
+}
+const codigoBonito = c => (c||"").replace(/(.{6})/g, "$1 ").trim();
+const codigoValido = c => /^[a-z0-9]{16,64}$/.test(c||"");
+
+/* Ao ligar a sincronia, o que JÁ está no aparelho precisa subir também.
+   Sem isso só viaja o que for tocado dali pra frente, e o diário antigo fica preso. */
+async function marcarTudoPendente(){
+  let n = 0;
+  for(const loja of Object.keys(TIPO_DA_LOJA)){
+    for(const o of (S[loja] || [])){
+      if(!o.atualizadoEm){
+        o.atualizadoEm = o.criadoEm || new Date().toISOString();
+        await putBruto(loja, o);
+      }
+      await marcarPendente(loja, o.id, false, o.atualizadoEm);
+      n++;
+    }
+  }
+  return n;
+}
+
+let sincronizando = false, timerSync = null;
+function agendarSync(){
+  if(!S.config.caderno) return;
+  clearTimeout(timerSync);
+  timerSync = setTimeout(() => sincronizar(true), 4000);
+}
+
+async function sincronizar(silencioso){
+  if(sincronizando || !S.config.caderno) return;
+  if(!navigator.onLine){ if(!silencioso) toast("Sem internet agora. Vai sincronizar quando voltar."); return; }
+  sincronizando = true;
+  if(!silencioso) toast("Sincronizando…");
+  try{
+    const pend = S.pendentes.slice();
+    const mudancas = [];
+    for(const p of pend){
+      if(p.apagado){
+        mudancas.push({id:p.oid, tipo:p.tipo, dados:null, apagado:true, atualizadoEm:p.atualizadoEm});
+        continue;
+      }
+      let obj = (S[p.loja] || []).find(x => x.id === p.oid);
+      if(!obj){
+        /* não está na memória: procura no banco antes de desistir, pra não sumir com a mudança */
+        obj = (await all(p.loja)).find(x => x.id === p.oid);
+        if(!obj) continue;
+      }
+      const dados = Object.assign({}, obj);
+      delete dados.foto;                      /* foto não viaja: fica no aparelho onde foi tirada */
+      mudancas.push({id:obj.id, tipo:p.tipo, dados, apagado:false,
+                     atualizadoEm: obj.atualizadoEm || p.atualizadoEm});
+    }
+
+    const res = await fetch(syncUrl(), {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({caderno:S.config.caderno, desde:S.config.syncEm || null, mudancas})
+    });
+    if(!res.ok) throw new Error("servidor respondeu " + res.status);
+    const j = await res.json();
+    if(j.erro) throw new Error(j.erro);
+
+    let recebidas = 0;
+    for(const m of (j.mudancas || [])){
+      const loja = LOJA_DO_TIPO[m.tipo]; if(!loja) continue;
+      const local = (S[loja] || []).find(x => x.id === m.id);
+      if(m.apagado){
+        if(local){ await delBruto(loja, m.id); S[loja] = S[loja].filter(x => x.id !== m.id); recebidas++; }
+        continue;
+      }
+      if(!m.dados) continue;
+      if(local && local.atualizadoEm && local.atualizadoEm >= m.atualizadoEm) continue;
+      const novo = Object.assign({}, m.dados, {atualizadoEm: m.atualizadoEm});
+      if(local && local.foto) novo.foto = local.foto;   /* a foto local sobrevive à volta do servidor */
+      await putBruto(loja, novo);
+      const ix = S[loja].findIndex(x => x.id === m.id);
+      if(ix >= 0) S[loja][ix] = novo; else S[loja].push(novo);
+      recebidas++;
+    }
+
+    /* só tira da fila o que foi realmente enviado. Se ele mexeu no item durante a
+       sincronia, a pendência nova sobrevive. */
+    for(const p of pend){
+      const atual = S.pendentes.find(x => x.id === p.id);
+      if(atual && atual.atualizadoEm === p.atualizadoEm) await delBruto("pendentes", p.id);
+    }
+    S.pendentes = await all("pendentes");
+    ordenar(S.lugares); ordenar(S.parametros); ordenar(S.produtos);
+    await saveCfg({syncEm: j.agora, syncQuando: new Date().toISOString(), syncErro: null});
+    render();
+    if(!silencioso) toast(mudancas.length || recebidas
+      ? "Pronto · enviei " + mudancas.length + ", recebi " + recebidas
+      : "Já estava tudo sincronizado");
+    return {enviadas: mudancas.length, recebidas};
+  }catch(e){
+    console.error("sync", e);
+    await saveCfg({syncErro: String(e.message || e)});
+    if(!silencioso) toast("Não consegui sincronizar: " + e.message);
+    render();
+  }finally{ sincronizando = false; }
+}
+
+async function ligarSincronia(){
+  const codigo = novoCaderno();
+  await saveCfg({caderno: codigo, syncEm: null, syncErro: null});
+  const n = await marcarTudoPendente();
+  toast("Caderno criado. Enviando " + n + " itens…");
+  await sincronizar(true);
+  render(); telaSincronia();
+}
+
+async function entrarNoCaderno(codigo){
+  await saveCfg({caderno: codigo, syncEm: null, syncErro: null});
+  /* baixa primeiro, empurra depois: o que já está no caderno tem preferência
+     sobre o vocabulário de fábrica deste aparelho */
+  await sincronizar(true);
+  await marcarTudoPendente();
+  await sincronizar(true);
+  render(); telaSincronia();
+}
+
+/* ============ tela de sincronia ============ */
+function telaSincronia(){
+  stack = {tipo:"sync"};
+  head("Sincronia", "");
+  const v = $("#view"); v.innerHTML = "";
+  $("#backBtn").classList.remove("hide");
+
+  const ligada = !!S.config.caderno;
+
+  if(!ligada){
+    const aviso = el("div","empty");
+    aviso.style.cssText = "text-align:left;font-size:15px;line-height:1.5";
+    aviso.innerHTML = "<b>Seus dados estão só neste aparelho.</b><br>" +
+      "Se ele quebrar ou você limpar o navegador, some tudo. Ligando a sincronia, " +
+      "uma cópia fica no servidor e os seus aparelhos passam a ver a mesma coisa.<br><br>" +
+      "<b>Não tem senha nem e-mail.</b> O caderno ganha um código de 24 letras. " +
+      "Quem tiver o código vê os dados — guarde como você guarda a chave de casa.";
+    v.appendChild(aviso);
+
+    const b1 = btn("Ligar a sincronia","pri", ()=>confirmarLigar());
+    b1.style.marginTop = "18px"; v.appendChild(b1);
+
+    const s = el("div","sec"); s.style.marginTop = "26px";
+    s.appendChild(el("div","sec-t","Já tem um caderno noutro aparelho?"));
+    const campo = input("text","","cole o código aqui");
+    campo.autocapitalize = "off"; campo.autocorrect = "off"; campo.spellcheck = false;
+    s.appendChild(campo);
+    const b2 = btn("Entrar neste caderno","sec", ()=>{
+      const c = campo.value.replace(/\s+/g,"").toLowerCase();
+      if(!codigoValido(c)) return toast("Esse código não parece certo. São 24 letras e números.");
+      confirmDel("Entrar no caderno?",
+        "Este aparelho vai receber tudo o que estiver naquele caderno, e mandar pra lá o que tiver aqui. " +
+        "Se este aparelho tem sobras de teste, apague tudo antes (Mais › Apagar tudo) — senão elas viajam.",
+        async()=>{ closeSheet(); await entrarNoCaderno(c); }, "Entrar", "pri");
+    });
+    b2.style.cssText = "margin-top:12px;flex:1"; v.appendChild(b2);
+    return;
+  }
+
+  /* --- ligada --- */
+  const esperando = S.pendentes.length;
+  const hd = el("div","card"); hd.style.cssText = "padding:4px 16px;margin-bottom:18px";
+  const kv = (k,val)=>{ if(val==null||val==="") return; const d = el("div","kv");
+    d.appendChild(el("span",null,esc(k))); d.appendChild(el("span",null,esc(val))); hd.appendChild(d); };
+  kv("Situação", S.config.syncErro ? "com problema" : (esperando ? esperando+" esperando pra subir" : "tudo sincronizado"));
+  kv("Última sincronia", S.config.syncQuando
+      ? new Date(S.config.syncQuando).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})
+      : "ainda não");
+  if(S.config.syncErro) kv("Último erro", S.config.syncErro);
+  v.appendChild(hd);
+
+  const s = el("div","sec");
+  s.appendChild(el("div","sec-t","O código deste caderno"));
+  const cx = el("div","card");
+  cx.style.cssText = "padding:18px 16px;text-align:center";
+  const cod = el("div", null, esc(codigoBonito(S.config.caderno)));
+  cod.style.cssText = "font:700 20px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;letter-spacing:.02em";
+  cx.appendChild(cod);
+  const cp = el("button","linkbtn","Copiar código");
+  cp.onclick = async()=>{
+    try{ await navigator.clipboard.writeText(S.config.caderno); toast("Código copiado"); }
+    catch(e){
+      const t = document.createElement("textarea"); t.value = S.config.caderno;
+      document.body.appendChild(t); t.select();
+      try{ document.execCommand("copy"); toast("Código copiado"); }catch(e2){ toast("Copie na mão: "+S.config.caderno); }
+      t.remove();
+    }
+  };
+  cx.appendChild(cp);
+  s.appendChild(cx);
+  const dica = el("div","empty");
+  dica.style.cssText = "margin-top:10px;text-align:left;font-size:14px";
+  dica.innerHTML = "No outro aparelho: <b>Mais › Apagar tudo</b>, depois <b>Sincronia</b> e cole este código.";
+  s.appendChild(dica);
+  v.appendChild(s);
+
+  const acoes = el("div","card"); acoes.style.marginTop = "8px";
+  const item = (ic,lb,ch,fn)=>{ const b = el("button","menu-item"); b.appendChild(el("span","ic",ic));
+    const t = el("span",null,esc(lb)); t.style.flex = "1"; b.appendChild(t);
+    b.appendChild(el("span","ch", esc(ch||""))); b.onclick = fn; return b; };
+
+  acoes.appendChild(item("&#128260;","Sincronizar agora","", async()=>{ await sincronizar(false); telaSincronia(); }));
+  acoes.appendChild(item("&#11014;","Enviar tudo deste aparelho","reenfileira tudo", async()=>{
+    const n = await marcarTudoPendente();
+    toast("Enfileirei "+n+" itens. Enviando…");
+    await sincronizar(false); telaSincronia();
+  }));
+  acoes.appendChild(item("&#11015;","Baixar tudo de novo","esquece o marcador", async()=>{
+    await saveCfg({syncEm:null});
+    await sincronizar(false); telaSincronia();
+  }));
+  acoes.appendChild(item("&#9940;","Desligar a sincronia","", ()=>{
+    confirmDel("Desligar a sincronia?",
+      "Este aparelho para de mandar e de receber. O que está no servidor continua lá, e o código continua valendo — guarde ele antes.",
+      async()=>{ await saveCfg({caderno:null, syncEm:null, syncErro:null}); closeSheet(); render(); telaSincronia(); }, "Desligar");
+  }));
+  v.appendChild(acoes);
+
+  const nota = el("div","empty");
+  nota.style.cssText = "margin-top:18px;text-align:left;font-size:14px";
+  nota.innerHTML = "Ele sincroniza sozinho: ao abrir, alguns segundos depois de cada registro, " +
+    "a cada 5 minutos e quando a internet volta.<br><br>" +
+    "<b>Fotos e áudios não sobem</b> — pesam demais. Ficam no aparelho onde foram feitos.";
+  v.appendChild(nota);
+}
+
+function confirmarLigar(){
+  confirmDel("Ligar a sincronia?",
+    "Vai ser criado um código de 24 letras. Quem tiver esse código vê os dados deste caderno — não tem senha. " +
+    "Tudo que já está neste aparelho sobe junto.",
+    async()=>{ closeSheet(); await ligarSincronia(); }, "Ligar", "pri");
+}
+
 /* ============ navegação ============ */
 let tab = "home", stack = null;
 function go(t){ tab = t; stack = null; render(); window.scrollTo(0,0); }
@@ -1714,6 +2005,7 @@ function render(){
   $("#backBtn").classList.toggle("hide", !stack);
   if(stack && stack.tipo === "lugar") return screenLugar(stack.id);
   if(stack && stack.tipo === "vocab") return telaVocab();
+  if(stack && stack.tipo === "sync") return telaSincronia();
   if(stack && stack.tipo === "gravacoes") return screenGravacoes();
   if(tab === "home") return screenHome();
   if(tab === "diario") return screenDiario();
@@ -2114,6 +2406,9 @@ function screenMais(){
   v.appendChild(c2);
 
   const c3 = el("div","card"); c3.style.marginTop = "18px";
+  c3.appendChild(item("&#128260;","Sincronia entre aparelhos",
+    S.config.caderno ? (S.config.syncErro ? "com problema" : (S.pendentes.length ? S.pendentes.length+" esperando" : "ligada")) : "desligada",
+    ()=>{ telaSincronia(); window.scrollTo(0,0); }));
   c3.appendChild(item("&#9203;","De quantos em quantos dias medir", (S.config.freqMedicao==null?2:S.config.freqMedicao)+" dias", perguntarFreq));
   v.appendChild(c3);
 
@@ -2130,11 +2425,12 @@ function screenMais(){
   const info = el("div","empty");
   info.style.cssText = "margin-top:18px;text-align:left;font-size:14px";
   const mb = (S.gravacoes.reduce((s,g)=>s+(g.blob?g.blob.size:0),0) + S.registros.reduce((s,r)=>s+(r.foto?r.foto.size:0),0))/1048576;
-  info.innerHTML = "<b>Etapa 1.</b> Tudo fica dentro deste aparelho e funciona sem internet. "+
-    "Sincronia entre aparelhos, rota do dia e o gráfico das leituras vêm nas próximas etapas.<br><br>"+
-    "Áudios e fotos ocupam <b>"+mb.toFixed(1)+" MB</b>.<br><br>"+
-    "<b>Faça backup de vez em quando.</b> Enquanto a nuvem não existe, o arquivo de backup é a sua única cópia — "+
-    "ele leva o vocabulário e os registros, mas não leva áudios nem fotos.";
+  info.innerHTML = "<b>Etapas 1 e 3.</b> Tudo funciona sem internet, dentro do aparelho. "+
+    "Rota do dia e o gráfico das leituras vêm nas próximas etapas.<br><br>"+
+    "Áudios e fotos ocupam <b>"+mb.toFixed(1)+" MB</b> e <b>não sobem</b> pra nuvem — ficam onde foram feitos.<br><br>"+
+    (S.config.caderno
+      ? "<b>A sincronia está ligada.</b> Mesmo assim, um backup de vez em quando não faz mal."
+      : "<b>Faça backup de vez em quando</b>, ou ligue a sincronia. Sem um dos dois, este aparelho é a sua única cópia.");
   v.appendChild(info);
 }
 
@@ -2195,6 +2491,13 @@ function apagarTudo(){
       await load();
     }
     render();
+
+    /* sincroniza sozinho: ao abrir, a cada 5 minutos, e quando a internet volta */
+    if(S.config.caderno){
+      sincronizar(true);
+      setInterval(()=>sincronizar(true), 5*60*1000);
+      window.addEventListener("online", ()=>sincronizar(true));
+    }
   }
   catch(e){
     $("#view").innerHTML = '<div class="empty"><b>Não consegui abrir o banco de dados.</b><br>Se você estiver numa aba anônima, tente numa aba normal.</div>';
@@ -2203,7 +2506,9 @@ function apagarTudo(){
 })();
 
 window.__app = {S, load, render, statusGeral, interpretar, telaConfirmar, tokenizar,
-                normalizarFala, instalarVocabulario, acharMedicoes, foraDaFaixa, slug};
+                normalizarFala, instalarVocabulario, acharMedicoes, foraDaFaixa, slug,
+                put, del, putBruto, delBruto, all, saveCfg, sincronizar, marcarTudoPendente,
+                ligarSincronia, entrarNoCaderno, novoCaderno, SEMENTE_EM};
 
 if("serviceWorker" in navigator && location.protocol === "https:"){
   window.addEventListener("load", ()=>{ navigator.serviceWorker.register("sw.js").catch(e=>console.warn("sw",e)); });
