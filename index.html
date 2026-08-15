@@ -1896,13 +1896,14 @@ function telaSincronia(){
     v.appendChild(aviso);
 
     const b1 = btn("Ligar a sincronia","pri", ()=>confirmarLigar());
-    b1.style.marginTop = "18px"; v.appendChild(b1);
+    b1.style.cssText = "margin-top:18px;display:block;width:100%"; v.appendChild(b1);
 
     const s = el("div","sec"); s.style.marginTop = "26px";
     s.appendChild(el("div","sec-t","Já tem um caderno noutro aparelho?"));
     const campo = input("text","","cole o código aqui");
     campo.autocapitalize = "off"; campo.autocorrect = "off"; campo.spellcheck = false;
     s.appendChild(campo);
+    v.appendChild(s);                 /* sem esta linha o campo existe e ninguém vê */
     const b2 = btn("Entrar neste caderno","sec", ()=>{
       const c = campo.value.replace(/\s+/g,"").toLowerCase();
       if(!codigoValido(c)) return toast("Esse código não parece certo. São 24 letras e números.");
@@ -1911,7 +1912,7 @@ function telaSincronia(){
         "Se este aparelho tem sobras de teste, apague tudo antes (Mais › Apagar tudo) — senão elas viajam.",
         async()=>{ closeSheet(); await entrarNoCaderno(c); }, "Entrar", "pri");
     });
-    b2.style.cssText = "margin-top:12px;flex:1"; v.appendChild(b2);
+    b2.style.cssText = "margin-top:12px;display:block;width:100%"; v.appendChild(b2);
     return;
   }
 
