@@ -250,8 +250,8 @@ function num(v){ if(v===""||v==null) return null; const n=parseFloat(String(v).r
 function fmtNum(n){ return String(n).replace(".",","); }
 
 /* ============ banco ============ */
-const DB_NAME="caderno-piscina", DB_VER=2;
-const STORES=["lugares","coisas","produtos","parametros","verbos","atencao","registros","gravacoes","pendentes","config"];
+const DB_NAME="caderno-piscina", DB_VER=3;
+const STORES=["lugares","coisas","produtos","parametros","verbos","atencao","rotinas","registros","gravacoes","pendentes","config"];
 let _db=null;
 function openDB(){
   return new Promise((ok,err)=>{
@@ -285,11 +285,11 @@ function all(store){ return new Promise((ok,err)=>{ const r=tx(store,"readonly")
 function clearStore(store){ return new Promise((ok,err)=>{ const r=tx(store,"readwrite").clear(); r.onsuccess=()=>ok(); r.onerror=e=>err(e.target.error); }); }
 
 /* ============ estado ============ */
-const S = { lugares:[], coisas:[], produtos:[], parametros:[], verbos:[], atencao:[], registros:[], gravacoes:[], pendentes:[], config:{} };
+const S = { lugares:[], coisas:[], produtos:[], parametros:[], verbos:[], atencao:[], rotinas:[], registros:[], gravacoes:[], pendentes:[], config:{} };
 async function load(){
-  const [lu,co,pr,pa,ve,at,re,gr,pe,cf] = await Promise.all(STORES.map(all));
+  const [lu,co,pr,pa,ve,at,ro,re,gr,pe,cf] = await Promise.all(STORES.map(all));
   S.lugares=lu; S.coisas=co; S.produtos=pr; S.parametros=pa; S.verbos=ve; S.atencao=at;
-  S.registros=re; S.gravacoes=gr; S.pendentes=pe;
+  S.rotinas=ro; S.registros=re; S.gravacoes=gr; S.pendentes=pe;
   S.config = (cf.find(x=>x.id==="app")||{id:"app"});
   /* o banco devolve por ordem de identificador (alfabética). Pra Piscina e pH
      aparecerem primeiro, cada item guarda a ordem em que foi cadastrado. */
@@ -351,6 +351,18 @@ function statusGeral(){
     const s = fora.map(x=>x.p.nome+" "+fmtNum(x.u.valor)+(x.p.unidade?" "+x.p.unidade:"")+
                           " (ideal "+fmtNum(x.p.min)+"–"+fmtNum(x.p.max)+")").join(" · ");
     return {nivel:"problema", t, s};
+  }
+
+  const venc = rotinasVencidas();
+  if(venc.length){
+    const pior = venc[0];
+    if(venc.length === 1){
+      const extra = pior.s.ultimo ? " · último " + fmtAgo(pior.s.ultimo.data) : "";
+      return {nivel:"atencao", t: pior.rot.nome,
+              s: textoRotina(pior.rot).replace(/^\w/, c=>c.toUpperCase()) + extra};
+    }
+    return {nivel:"atencao", t: venc.length + " coisas pra fazer",
+            s: venc.map(x => x.rot.nome + " — " + textoRotina(x.rot)).join(" · ")};
   }
 
   const ab = alertasAbertos();
@@ -629,7 +641,7 @@ function tocar(g, botao){
 /* ============ vocabulário do Rob ============ */
 /* Os identificadores vêm do nome (slug), não são sorteados. Assim, quando a
    sincronia entrar (etapa 3), os dois aparelhos criam o MESMO item em vez de dois. */
-const VOCAB_VERSAO = 1;
+const VOCAB_VERSAO = 2;   /* 2 = entrou a rotina de regar as plantas */
 
 const V_LUGARES = [
   {nome:"Piscina",          icone:"&#128704;", volume:25000, apelidos:["a piscina","na piscina","pissina","piscininha","na agua","da piscina"]},
@@ -817,6 +829,19 @@ async function instalarVocabulario(){
     id:"atn-"+slug(v.palavra), nome:v.palavra, lugarId: v.lugar? "lug-"+slug(v.lugar) : null,
     apelidos:v.apelidos||[], criadoEm:new Date().toISOString()
   }), v=>v.palavra);
+
+  /* rotinas de fábrica: só entram se ainda não existir uma com o mesmo nome.
+     Se o Rob mexeu na dele, fica a dele. */
+  for(const v of VOCAB_ROTINAS){
+    if(S.rotinas.some(x => igual(x.nome, v.nome))) continue;
+    const o = {id:"rot-"+slug(v.nome), nome:v.nome,
+               lugarId: v.lugar ? "lug-"+slug(v.lugar) : null,
+               coisaId: v.coisa ? "coi-"+slug(v.coisa) : null,
+               verbo: v.verbo || null, cada: v.cada, ativo:true,
+               criadoEm:new Date().toISOString(), atualizadoEm: SEMENTE_EM};
+    await putBruto("rotinas", o); S.rotinas.push(o); novos++;
+    if(S.config.caderno) await marcarPendente("rotinas", o.id, false, SEMENTE_EM);
+  }
 
   ordenar(S.lugares); ordenar(S.parametros); ordenar(S.produtos);
   return {novos, completados};
@@ -1732,10 +1757,10 @@ const SEMENTE_EM = "2020-01-01T00:00:00.000Z";
 /* o que viaja pra nuvem. Gravações (áudio) e config ficam de fora. */
 const TIPO_DA_LOJA = {lugares:"lugar", coisas:"coisa", produtos:"produto",
                       parametros:"parametro", verbos:"verbo", atencao:"atencao",
-                      registros:"registro"};
+                      rotinas:"rotina", registros:"registro"};
 const LOJA_DO_TIPO = {lugar:"lugares", coisa:"coisas", produto:"produtos",
                       parametro:"parametros", verbo:"verbos", atencao:"atencao",
-                      registro:"registros"};
+                      rotina:"rotinas", registro:"registros"};
 
 async function marcarPendente(loja, id, apagado, quando){
   const tipo = TIPO_DA_LOJA[loja]; if(!tipo) return;
@@ -1990,11 +2015,170 @@ function confirmarLigar(){
     async()=>{ closeSheet(); await ligarSincronia(); }, "Ligar", "pri");
 }
 
+/* ============ rotinas ============ */
+/* Uma rotina é: neste lugar, nesta coisa, este verbo, de quantos em quantos dias.
+   O Rob NÃO marca como feito. Quando ele fala "reguei as plantas", o próprio
+   registro cumpre a rotina e o relógio zera sozinho. */
+
+const VOCAB_ROTINAS = [
+  {nome:"Regar as plantas", lugar:"Entrada", coisa:"Plantas", verbo:"reguei", cada:7}
+];
+
+function rotinaById(id){ return S.rotinas.find(r=>r.id===id); }
+const rotinasAtivas = () => S.rotinas.filter(r=>r.ativo !== false);
+
+/* o verbo do registro cumpre o verbo da rotina? */
+function mesmoVerbo(rotVerbo, regVerbo){
+  if(!rotVerbo) return true;
+  if(!regVerbo) return false;
+  const a = normalizarFala(rotVerbo), b = normalizarFala(regVerbo);
+  if(a === b) return true;
+  /* também vale um apelido do mesmo verbo do vocabulário */
+  const v = S.verbos.find(x => normalizarFala(x.nome) === a);
+  if(v && termosDe(v).includes(b)) return true;
+  return parecido(a,b) >= 0.86;
+}
+
+function cumpre(rot, r){
+  if(r.tipo !== "servico") return false;
+  if(rot.lugarId && r.lugarId !== rot.lugarId) return false;
+  /* citou a coisa certa, ou não citou coisa nenhuma — "reguei" na Entrada conta */
+  if(rot.coisaId && r.coisaId && r.coisaId !== rot.coisaId) return false;
+  return mesmoVerbo(rot.verbo, r.verbo);
+}
+
+function ultimoFeito(rot){
+  const L = S.registros.filter(r => cumpre(rot, r)).sort((a,b)=>ordem(b).localeCompare(ordem(a)));
+  return L.length ? L[0] : null;
+}
+
+/* quantos dias faltam. Negativo = atrasado. null = nunca foi feito. */
+function situacaoRotina(rot){
+  const u = ultimoFeito(rot);
+  if(!u) return {ultimo:null, faltam:null, estado:"nunca"};
+  const passados = daysAgo(u.data);
+  const faltam = (rot.cada || 0) - passados;
+  return {ultimo:u, faltam,
+          estado: faltam < 0 ? "atrasada" : faltam === 0 ? "hoje" : "emdia"};
+}
+
+function textoRotina(rot){
+  const s = situacaoRotina(rot);
+  if(s.estado === "nunca") return "nunca foi feito";
+  if(s.estado === "atrasada") return s.faltam === -1 ? "venceu ontem" : "atrasada " + (-s.faltam) + " dias";
+  if(s.estado === "hoje") return "vence hoje";
+  return s.faltam === 1 ? "vence amanhã" : "vence em " + s.faltam + " dias";
+}
+const pillRotina = est => est === "atrasada" || est === "nunca" ? "bad" : est === "hoje" ? "warn" : "ok";
+
+/* as que estão pedindo atenção agora, mais urgente primeiro */
+function rotinasVencidas(){
+  return rotinasAtivas()
+    .map(rot => ({rot, s: situacaoRotina(rot)}))
+    .filter(x => x.s.estado === "atrasada" || x.s.estado === "hoje" || x.s.estado === "nunca")
+    .sort((a,b) => (a.s.faltam==null?-999:a.s.faltam) - (b.s.faltam==null?-999:b.s.faltam));
+}
+
+/* ============ tela de uma coisa (ex.: Plantas) ============ */
+function screenCoisa(id){
+  const c = coisaById(id); if(!c){ stack = {tipo:"lugares"}; return render(); }
+  const lu = c.lugarId ? lugarById(c.lugarId) : null;
+  head(c.nome, lu ? lu.nome : "");
+  const v = $("#view");
+  $("#backBtn").classList.remove("hide");
+
+  const minhas = rotinasAtivas().filter(r => r.coisaId === c.id);
+  if(minhas.length){
+    const s = el("div","sec");
+    s.appendChild(el("div","sec-t","Rotina"));
+    const card = el("div","card");
+    minhas.forEach(rot => card.appendChild(linhaRotina(rot)));
+    s.appendChild(card);
+    v.appendChild(s);
+  }
+
+  const rs = S.registros.filter(r => r.coisaId === c.id).sort((a,b)=>ordem(b).localeCompare(ordem(a)));
+  const s2 = el("div","sec"); s2.id = "histCoisa";
+  s2.appendChild(el("div","sec-t","Tudo que você fez " + (c.nome.match(/s$/i) ? "nelas" : "nisso")));
+  if(rs.length) s2.appendChild(grouped(rs, false));
+  else s2.appendChild(el("div","empty","Nada registrado ainda."));
+  v.appendChild(s2);
+
+  const acoes = el("div","two");
+  const b1 = btn("+ Nova rotina","sec", ()=>formRotina(null, {coisaId:c.id, lugarId:c.lugarId}, ()=>{ stack={tipo:"coisa",id:c.id}; render(); }));
+  const b2 = btn("Editar " + c.nome,"sec", ()=>formCoisa(c));
+  acoes.appendChild(b1); acoes.appendChild(b2);
+  acoes.style.marginTop = "4px";
+  v.appendChild(acoes);
+}
+
+function linhaRotina(rot){
+  const s = situacaoRotina(rot);
+  const b = el("button","acard");
+  const bd = el("div","bd");
+  bd.appendChild(el("div","nm", esc(rot.nome)));
+  const lu = rot.lugarId ? lugarById(rot.lugarId) : null;
+  const partes = ["a cada " + rot.cada + (rot.cada === 1 ? " dia" : " dias")];
+  if(s.ultimo) partes.push("último " + fmtAgo(s.ultimo.data));
+  else if(lu) partes.push(lu.nome);
+  bd.appendChild(el("div","mt", esc(partes.join(" · "))));
+  b.appendChild(bd);
+  b.appendChild(el("div","pill " + pillRotina(s.estado), esc(textoRotina(rot))));
+  b.onclick = ()=>formRotina(rot);
+  return b;
+}
+
+/* ============ formulário de rotina ============ */
+function formRotina(existing, pre, then){
+  const a = existing || pre || {};
+  const eb = errBox(), w = el("div"); w.appendChild(eb);
+  const fNome  = input("text", a.nome||"", "ex: Regar as plantas");
+  const fLugar = selectEl(opcoes(S.lugares), a.lugarId||"", "— qualquer lugar —");
+  const fCoisa = selectEl(opcoes(S.coisas), a.coisaId||"", "— qualquer coisa —");
+  const fVerbo = selectEl(S.verbos.map(x=>({label:x.nome, value:x.nome})), a.verbo||"", "— qualquer serviço —");
+  const fCada  = input("number", a.cada!=null?a.cada:7, "dias");
+
+  fCoisa.onchange = ()=>{ const c = coisaById(fCoisa.value); if(c && c.lugarId && !fLugar.value) fLugar.value = c.lugarId; };
+
+  w.appendChild(field("Nome da rotina", fNome));
+  w.appendChild(field("Onde", fLugar));
+  w.appendChild(field("Em que", fCoisa, "É aqui que ela aparece: Lugares › esta coisa."));
+  w.appendChild(field("Que serviço conta como feito", fVerbo,
+    "Quando você falar este verbo, o relógio zera sozinho. Não precisa marcar nada."));
+  w.appendChild(field("A cada quantos dias", fCada));
+
+  if(existing){
+    const s = situacaoRotina(existing);
+    const box = el("div","aviso" + (s.estado==="atrasada"||s.estado==="nunca" ? " bad" : ""));
+    box.textContent = s.ultimo
+      ? "Último: " + fmtDay(s.ultimo.data) + " · " + textoRotina(existing)
+      : "Ainda não achei nenhum registro que cumpra esta rotina.";
+    w.appendChild(box);
+  }
+
+  const foot = [btn("Cancelar","sec",closeSheet), btn("Salvar","pri", async()=>{
+    if(!fNome.value.trim()) return showErr(eb,"Dê um nome à rotina.");
+    const cada = num(fCada.value);
+    if(!cada || cada < 1) return showErr(eb,"Escreva de quantos em quantos dias.");
+    const o = {id: a.id || ("rot-"+slug(fNome.value)), nome: fNome.value.trim(),
+               lugarId: fLugar.value||null, coisaId: fCoisa.value||null,
+               verbo: fVerbo.value||null, cada, ativo: a.ativo !== false,
+               criadoEm: a.criadoEm || new Date().toISOString()};
+    await put("rotinas", o);
+    const ix = S.rotinas.findIndex(x=>x.id===o.id); if(ix>=0) S.rotinas[ix]=o; else S.rotinas.push(o);
+    closeSheet(); render(); toast(existing?"Rotina atualizada":"Rotina criada"); if(then) then(o);
+  })];
+  if(existing) foot.unshift(btn("Excluir","dng",()=>confirmDel("Excluir \""+a.nome+"\"?","Os registros continuam no diário.", async()=>{
+    await del("rotinas", a.id); S.rotinas = S.rotinas.filter(x=>x.id!==a.id); closeSheet(); render(); toast("Rotina excluída");
+  })));
+  openSheet(existing?"Editar rotina":"Nova rotina", w, foot);
+}
+
 /* ============ navegação ============ */
 let tab = "home", stack = null;
 function go(t){ tab = t; stack = null; render(); window.scrollTo(0,0); }
 /* do detalhe de um lugar, voltar leva pra lista de lugares — não pro menu */
-$("#backBtn").onclick = ()=>{ stack = (stack && stack.tipo === "lugar") ? {tipo:"lugares"} : null; render(); window.scrollTo(0,0); };
+$("#backBtn").onclick = ()=>{ stack = (stack && (stack.tipo === "lugar" || stack.tipo === "coisa")) ? {tipo:"lugares"} : null; render(); window.scrollTo(0,0); };
 document.querySelectorAll("nav button").forEach(b => b.onclick = ()=>{
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x===b));
   go(b.dataset.tab);
@@ -2007,6 +2191,7 @@ function render(){
   $("#backBtn").classList.toggle("hide", !stack);
   if(stack && stack.tipo === "lugares") return screenLugares();
   if(stack && stack.tipo === "lugar") return screenLugar(stack.id);
+  if(stack && stack.tipo === "coisa") return screenCoisa(stack.id);
   if(stack && stack.tipo === "vocab") return telaVocab();
   if(stack && stack.tipo === "sync") return telaSincronia();
   if(stack && stack.tipo === "gravacoes") return screenGravacoes();
@@ -2068,9 +2253,18 @@ function screenHome(){
   }
   v.appendChild(h);
 
+  const venc = rotinasVencidas();
+  if(venc.length){
+    const s = el("div","sec"); s.style.marginTop = "30px";
+    s.appendChild(el("div","sec-t","Pra fazer"));
+    const c = el("div","card");
+    venc.forEach(x => c.appendChild(linhaRotina(x.rot)));
+    s.appendChild(c); v.appendChild(s);
+  }
+
   const ab = alertasAbertos();
   if(ab.length){
-    const s = el("div","sec"); s.style.marginTop = "30px";
+    const s = el("div","sec"); s.style.marginTop = venc.length ? "22px" : "30px";
     s.appendChild(el("div","sec-t","Pra olhar"));
     const c = el("div","card");
     ab.slice(0,6).forEach(r => c.appendChild(rowRegistro(r,true)));
@@ -2257,8 +2451,34 @@ function screenLugares(){
   const v = $("#view"); v.innerHTML = "";
   $("#backBtn").classList.remove("hide");
 
+  /* As rotinas moram aqui em cima, cada uma com o nome da coisa: é assim que
+     "Plantas" aparece em Lugares, que foi o que o Rob pediu. */
+  const rots = rotinasAtivas();
+  if(rots.length){
+    const sr = el("div","sec");
+    sr.appendChild(el("div","sec-t","Rotinas"));
+    const cr = el("div","card");
+    rots.forEach(rot => {
+      const co = rot.coisaId ? coisaById(rot.coisaId) : null;
+      const s = situacaoRotina(rot);
+      const b = el("button","acard");
+      const bd = el("div","bd");
+      bd.appendChild(el("div","nm", esc(co ? co.nome : rot.nome)));
+      bd.appendChild(el("div","mt", esc(rot.nome + " · a cada " + rot.cada + (rot.cada===1?" dia":" dias"))));
+      b.appendChild(bd);
+      b.appendChild(el("div","pill " + pillRotina(s.estado), esc(textoRotina(rot))));
+      b.onclick = co
+        ? ()=>{ stack = {tipo:"coisa", id:co.id}; render(); window.scrollTo(0,0); }
+        : ()=>formRotina(rot);
+      cr.appendChild(b);
+    });
+    sr.appendChild(cr); v.appendChild(sr);
+  }
+
   if(!S.lugares.length){ v.appendChild(el("div","empty","Nenhum lugar cadastrado ainda.")); return; }
 
+  const secL = el("div","sec"); secL.id = "listaLugares";
+  secL.appendChild(el("div","sec-t","Lugares"));
   const c = el("div","card");
   S.lugares.forEach(a => {
     const rs = S.registros.filter(r => r.lugarId === a.id).sort((x,y)=>ordem(y).localeCompare(ordem(x)));
@@ -2278,10 +2498,12 @@ function screenLugares(){
     b.onclick = ()=>{ stack = {tipo:"lugar", id:a.id}; render(); window.scrollTo(0,0); };
     c.appendChild(b);
   });
-  v.appendChild(c);
+  secL.appendChild(c); v.appendChild(secL);
 
-  const nv = btn("+ Novo lugar","sec", ()=>formLugar(null, ()=>screenLugares()));
-  nv.style.cssText = "margin-top:16px;display:block;width:100%"; v.appendChild(nv);
+  const acoes = el("div","two");
+  acoes.appendChild(btn("+ Nova rotina","sec", ()=>formRotina(null, null, ()=>screenLugares())));
+  acoes.appendChild(btn("+ Novo lugar","sec", ()=>formLugar(null, ()=>screenLugares())));
+  v.appendChild(acoes);
 }
 
 /* ============ UM LUGAR ============ */
@@ -2307,6 +2529,13 @@ function screenLugar(id){
     const s = el("div","sec"); s.appendChild(el("div","sec-t","Pra olhar"));
     const c = el("div","card"); abertos.forEach(r=>c.appendChild(rowRegistro(r,false)));
     s.appendChild(c); v.appendChild(s);
+  }
+
+  const rotsAqui = rotinasAtivas().filter(r => r.lugarId === a.id);
+  if(rotsAqui.length){
+    const sr = el("div","sec"); sr.appendChild(el("div","sec-t","Rotinas daqui"));
+    const cr = el("div","card"); rotsAqui.forEach(rot => cr.appendChild(linhaRotina(rot)));
+    sr.appendChild(cr); v.appendChild(sr);
   }
 
   const s = el("div","sec"); s.id = "histLugar";
@@ -2469,8 +2698,8 @@ function screenMais(){
   const info = el("div","empty");
   info.style.cssText = "margin-top:18px;text-align:left;font-size:14px";
   const mb = (S.gravacoes.reduce((s,g)=>s+(g.blob?g.blob.size:0),0) + S.registros.reduce((s,r)=>s+(r.foto?r.foto.size:0),0))/1048576;
-  info.innerHTML = "<b>Etapas 1 e 3.</b> Tudo funciona sem internet, dentro do aparelho. "+
-    "Rota do dia e o gráfico das leituras vêm nas próximas etapas.<br><br>"+
+  info.innerHTML = "<b>Etapas 1, 3 e 4.</b> Tudo funciona sem internet, dentro do aparelho. "+
+    "O gráfico das leituras vem na próxima etapa.<br><br>"+
     "Áudios e fotos ocupam <b>"+mb.toFixed(1)+" MB</b> e <b>não sobem</b> pra nuvem — ficam onde foram feitos.<br><br>"+
     (S.config.caderno
       ? "<b>A sincronia está ligada.</b> Mesmo assim, um backup de vez em quando não faz mal."
@@ -2552,7 +2781,8 @@ function apagarTudo(){
 window.__app = {S, load, render, statusGeral, interpretar, telaConfirmar, tokenizar,
                 normalizarFala, instalarVocabulario, acharMedicoes, foraDaFaixa, slug,
                 put, del, putBruto, delBruto, all, saveCfg, sincronizar, marcarTudoPendente,
-                ligarSincronia, entrarNoCaderno, novoCaderno, SEMENTE_EM};
+                ligarSincronia, entrarNoCaderno, novoCaderno, SEMENTE_EM,
+                situacaoRotina, rotinasVencidas, textoRotina, ultimoFeito, cumpre};
 
 if("serviceWorker" in navigator && location.protocol === "https:"){
   window.addEventListener("load", ()=>{ navigator.serviceWorker.register("sw.js").catch(e=>console.warn("sw",e)); });
