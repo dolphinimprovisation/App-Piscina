@@ -1993,7 +1993,8 @@ function confirmarLigar(){
 /* ============ navegação ============ */
 let tab = "home", stack = null;
 function go(t){ tab = t; stack = null; render(); window.scrollTo(0,0); }
-$("#backBtn").onclick = ()=>{ stack = null; render(); };
+/* do detalhe de um lugar, voltar leva pra lista de lugares — não pro menu */
+$("#backBtn").onclick = ()=>{ stack = (stack && stack.tipo === "lugar") ? {tipo:"lugares"} : null; render(); window.scrollTo(0,0); };
 document.querySelectorAll("nav button").forEach(b => b.onclick = ()=>{
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x===b));
   go(b.dataset.tab);
@@ -2004,6 +2005,7 @@ function head(t,s){ $("#hdTitle").childNodes[0].nodeValue = t; $("#hdSub").textC
 function render(){
   const v = $("#view"); v.innerHTML = "";
   $("#backBtn").classList.toggle("hide", !stack);
+  if(stack && stack.tipo === "lugares") return screenLugares();
   if(stack && stack.tipo === "lugar") return screenLugar(stack.id);
   if(stack && stack.tipo === "vocab") return telaVocab();
   if(stack && stack.tipo === "sync") return telaSincronia();
@@ -2246,7 +2248,43 @@ function verRegistro(r){
   openSheet(TIPO_LB[r.tipo], w, foot);
 }
 
-/* ============ LUGAR ============ */
+/* ============ LUGARES ============ */
+/* A lista dos lugares com o que aconteceu em cada um. Não confundir com a aba
+   Lugares do Vocabulário: lá é onde ele ensina o app a reconhecer o nome. */
+function screenLugares(){
+  stack = {tipo:"lugares"};
+  head("Lugares", "o que foi feito em cada um");
+  const v = $("#view"); v.innerHTML = "";
+  $("#backBtn").classList.remove("hide");
+
+  if(!S.lugares.length){ v.appendChild(el("div","empty","Nenhum lugar cadastrado ainda.")); return; }
+
+  const c = el("div","card");
+  S.lugares.forEach(a => {
+    const rs = S.registros.filter(r => r.lugarId === a.id).sort((x,y)=>ordem(y).localeCompare(ordem(x)));
+    const abertos = rs.filter(r => r.atencao && !r.resolvido).length;
+    const b = el("button","acard");
+    const bd = el("div","bd");
+    bd.appendChild(el("div","nm", (a.icone ? a.icone+" " : "") + esc(a.nome)));
+    const partes = [];
+    partes.push(rs.length === 1 ? "1 registro" : rs.length + " registros");
+    if(rs.length) partes.push("último " + fmtAgo(rs[0].data));
+    if(a.volume) partes.push(fmtNum(a.volume) + " L");
+    bd.appendChild(el("div","mt", esc(partes.join(" · "))));
+    b.appendChild(bd);
+    if(abertos) b.appendChild(el("div","pill warn", "⚠ " + abertos));
+    else if(rs.length && daysAgo(rs[0].data) <= 1) b.appendChild(el("div","pill ok","em dia"));
+    else b.appendChild(el("div","pill neutral", rs.length ? fmtAgo(rs[0].data) : "sem registro"));
+    b.onclick = ()=>{ stack = {tipo:"lugar", id:a.id}; render(); window.scrollTo(0,0); };
+    c.appendChild(b);
+  });
+  v.appendChild(c);
+
+  const nv = btn("+ Novo lugar","sec", ()=>formLugar(null, ()=>screenLugares()));
+  nv.style.cssText = "margin-top:16px;display:block;width:100%"; v.appendChild(nv);
+}
+
+/* ============ UM LUGAR ============ */
 function screenLugar(id){
   const a = lugarById(id); if(!a){ stack = null; return render(); }
   head(a.nome, "");
@@ -2258,18 +2296,21 @@ function screenLugar(id){
   kv("Registros", rs.length);
   kv("Último", rs.length ? fmtAgo(rs[0].data) : "nenhum");
   if(a.volume) kv("Volume", fmtNum(a.volume)+" L");
-  if(a.apelidos && a.apelidos.length) kv("Como você fala", a.apelidos.join(", "));
+  /* a lista de apelidos vive em Editar lugar. Aqui a tela é sobre o que aconteceu. */
   if(a.obs) kv("Observação", a.obs);
   v.appendChild(hd);
 
+  /* O "Pra olhar" só entra quando o histórico é longo o bastante pra esconder o
+     alerta. Com poucos registros ele apareceria duas vezes na mesma tela. */
   const abertos = rs.filter(r=>r.atencao && !r.resolvido);
-  if(abertos.length){
+  if(abertos.length && rs.length > 8){
     const s = el("div","sec"); s.appendChild(el("div","sec-t","Pra olhar"));
     const c = el("div","card"); abertos.forEach(r=>c.appendChild(rowRegistro(r,false)));
     s.appendChild(c); v.appendChild(s);
   }
 
-  const s = el("div","sec"); s.appendChild(el("div","sec-t","Histórico deste lugar"));
+  const s = el("div","sec"); s.id = "histLugar";
+  s.appendChild(el("div","sec-t","Histórico deste lugar"));
   if(rs.length) s.appendChild(grouped(rs, false)); else s.appendChild(el("div","empty","Nenhum registro aqui ainda."));
   v.appendChild(s);
   const eb = btn("Editar lugar","sec",()=>formLugar(a)); eb.style.flex = "1"; v.appendChild(eb);
@@ -2397,8 +2438,10 @@ function screenMais(){
     b.appendChild(el("span","ch", esc(ch||""))); b.onclick = fn; return b; };
 
   const c = el("div","card");
-  c.appendChild(item("&#128218;","Vocabulário","o que o app entende", ()=>{ telaVocab(); window.scrollTo(0,0); }));
-  c.appendChild(item("&#128205;","Lugares", String(S.lugares.length), ()=>{ vocabAba="lugares"; telaVocab(); window.scrollTo(0,0); }));
+  c.appendChild(item("&#128205;","Lugares","o que foi feito em cada um",
+    ()=>{ stack = {tipo:"lugares"}; render(); window.scrollTo(0,0); }));
+  c.appendChild(item("&#128218;","Vocabulário","as palavras que o app entende",
+    ()=>{ telaVocab(); window.scrollTo(0,0); }));
   v.appendChild(c);
 
   const c2 = el("div","card"); c2.style.marginTop = "18px";
