@@ -102,7 +102,7 @@ main{padding:20px 16px 8px}
   background:transparent;border-radius:0;padding:12px;font-size:14.5px;font-weight:800;text-align:center}
 .pend{margin-top:24px;font:800 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;
   color:var(--osso);padding:12px 18px;border-radius:0;background:var(--ink)}
-.photobtn{margin-top:26px;display:inline-flex;align-items:center;gap:9px;
+.photobtn{margin-top:38px;display:inline-flex;align-items:center;gap:9px;
   font:800 12.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;
   color:var(--ink);padding:14px 20px;border:2px solid var(--ink);border-radius:0;background:transparent}
 
@@ -2303,10 +2303,13 @@ function screenHome(){
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2.5" width="6" height="11" rx="3" fill="currentColor" stroke="none"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"/><path d="M12 18v3.5"/></svg>';
   m.onclick = toggleFala;
   mw.appendChild(m);
-  const lb = el("div","miclb");
-  if(gravando) lb.innerHTML = 'Ouvindo <span id="micTime" class="mictime">0:00</span> · toque para parar';
-  else lb.textContent = "Toque e fale o que você fez ou mediu";
-  mw.appendChild(lb);
+  /* Parado, o botão não precisa de legenda: um microfone grande no meio da tela
+     já diz o que faz. A legenda só entra gravando, aí ela informa de verdade. */
+  if(gravando){
+    const lb = el("div","miclb");
+    lb.innerHTML = 'Ouvindo <span id="micTime" class="mictime">0:00</span> · toque para parar';
+    mw.appendChild(lb);
+  }
   if(gravando){
     const fv = el("div","fala-viva"); fv.id = "falaViva";
     fv.innerHTML = '<span class="par">Pode falar…</span>';
